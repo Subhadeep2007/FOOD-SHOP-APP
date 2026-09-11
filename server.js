@@ -5,7 +5,7 @@ import http from "http";
 import app from "./app.js";
 
 import connectDatabase
-from "./config/db.js";
+from "./config/database.js";
 
 import { Server } from "socket.io";
 

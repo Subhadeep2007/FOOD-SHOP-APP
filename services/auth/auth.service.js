@@ -10,7 +10,7 @@ import sendEmail from "../../utils/sendEmail.js";
 import {
     generateAccessToken,
     generateRefreshToken
-} from "../../utils/token.utils.js";
+} from "../../utils/generateToken.js";
 
 
 // ========================================
