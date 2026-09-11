@@ -9,9 +9,17 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const sendEmail = async({ to, subject, html }) => {
+
+const sendEmail = async({
+    to,
+    subject,
+    html
+}) => {
+
     const mailOptions = {
-        from: `"Project Partner Finder" <${process.env.EMAIL_USER}>`,
+        from: process.env.EMAIL_FROM ||
+            `"Food Shop" <${process.env.EMAIL}>`,
+
         to,
         subject,
         html
@@ -19,5 +27,6 @@ const sendEmail = async({ to, subject, html }) => {
 
     await transporter.sendMail(mailOptions);
 };
+
 
 export default sendEmail;
