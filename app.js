@@ -5,7 +5,17 @@ import helmet from "helmet";
 import morgan from "morgan";
 
 import authRoutes from "./routes/auth.routes.js";
+import categoryRoutes
+from "./routes/category.routes.js";
 
+import foodRoutes
+from "./routes/food.routes.js";
+
+import cartRoutes
+from "./routes/cart.routes.js";
+
+import addressRoutes
+from "./routes/address.routes.js";
 const app = express();
 
 
@@ -97,7 +107,25 @@ app.use(
     "/api/auth",
     authRoutes
 );
+app.use(
+    "/api/categories",
+    categoryRoutes
+);
 
+app.use(
+    "/api/foods",
+    foodRoutes
+);
+
+app.use(
+    "/api/cart",
+    cartRoutes
+);
+
+app.use(
+    "/api/addresses",
+    addressRoutes
+);
 
 // ========================================
 // 404 HANDLER
