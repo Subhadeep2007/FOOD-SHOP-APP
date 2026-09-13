@@ -16,6 +16,8 @@ from "./routes/cart.routes.js";
 
 import addressRoutes
 from "./routes/address.routes.js";
+import orderRoutes
+from "./routes/order.routes.js";
 const app = express();
 
 
@@ -126,7 +128,10 @@ app.use(
     "/api/addresses",
     addressRoutes
 );
-
+app.use(
+    "/api/orders",
+    orderRoutes
+);
 // ========================================
 // 404 HANDLER
 // ========================================
