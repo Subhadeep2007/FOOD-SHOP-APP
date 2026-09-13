@@ -1,10 +1,17 @@
 import express from "express";
 
+
 import authMiddleware
 from "../../middleware/auth.middleware.js";
 
+
 import adminMiddleware
 from "../../middleware/admin.middleware.js";
+
+
+import upload
+from "../../middleware/upload.middleware.js";
+
 
 import {
     getAll,
@@ -27,10 +34,15 @@ const router =
 // ========================================
 
 router.get(
+
     "/",
+
     authMiddleware,
+
     adminMiddleware,
+
     getAll
+
 );
 
 
@@ -39,10 +51,15 @@ router.get(
 // ========================================
 
 router.get(
+
     "/:id",
+
     authMiddleware,
+
     adminMiddleware,
+
     getOne
+
 );
 
 
@@ -51,10 +68,20 @@ router.get(
 // ========================================
 
 router.post(
+
     "/",
+
     authMiddleware,
+
     adminMiddleware,
+
+    upload.array(
+        "images",
+        5
+    ),
+
     create
+
 );
 
 
@@ -63,10 +90,20 @@ router.post(
 // ========================================
 
 router.patch(
+
     "/:id",
+
     authMiddleware,
+
     adminMiddleware,
+
+    upload.array(
+        "images",
+        5
+    ),
+
     update
+
 );
 
 
@@ -75,10 +112,15 @@ router.patch(
 // ========================================
 
 router.patch(
+
     "/:id/price",
+
     authMiddleware,
+
     adminMiddleware,
+
     updatePrice
+
 );
 
 
@@ -87,10 +129,15 @@ router.patch(
 // ========================================
 
 router.patch(
+
     "/:id/stock",
+
     authMiddleware,
+
     adminMiddleware,
+
     updateStock
+
 );
 
 
@@ -99,10 +146,15 @@ router.patch(
 // ========================================
 
 router.patch(
+
     "/:id/availability",
+
     authMiddleware,
+
     adminMiddleware,
+
     updateAvailability
+
 );
 
 
@@ -111,10 +163,15 @@ router.patch(
 // ========================================
 
 router.delete(
+
     "/:id",
+
     authMiddleware,
+
     adminMiddleware,
+
     remove
+
 );
 
 

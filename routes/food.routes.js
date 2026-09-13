@@ -1,26 +1,49 @@
 import express from "express";
 
+
 import {
+
     create,
+
     getAll,
+
     getOne,
+
     update,
+
     remove
+
 } from "../controllers/food/food.controller.js";
 
+
 import validate
+
 from "../middleware/validate.middleware.js";
 
+
 import authMiddleware
+
 from "../middleware/auth.middleware.js";
 
+
 import adminMiddleware
+
 from "../middleware/admin.middleware.js";
 
+
+import upload
+
+from "../middleware/upload.middleware.js";
+
+
 import {
+
     foodSchema,
+
     updateFoodSchema
+
 } from "../validators/food.validator.js";
+
 
 const router =
     express.Router();
@@ -31,13 +54,20 @@ const router =
 // ========================================
 
 router.get(
+
     "/",
+
     getAll
+
 );
 
+
 router.get(
+
     "/:id",
+
     getOne
+
 );
 
 
@@ -45,27 +75,66 @@ router.get(
 // ADMIN
 // ========================================
 
+// CREATE FOOD
+
 router.post(
+
     "/",
+
     authMiddleware,
+
     adminMiddleware,
-    validate(foodSchema),
+
+    upload.array(
+        "images",
+        5
+    ),
+
+    validate(
+        foodSchema
+    ),
+
     create
+
 );
+
+
+// UPDATE FOOD
 
 router.patch(
+
     "/:id",
+
     authMiddleware,
+
     adminMiddleware,
-    validate(updateFoodSchema),
+
+    upload.array(
+        "images",
+        5
+    ),
+
+    validate(
+        updateFoodSchema
+    ),
+
     update
+
 );
 
+
+// DELETE FOOD
+
 router.delete(
+
     "/:id",
+
     authMiddleware,
+
     adminMiddleware,
+
     remove
+
 );
 
 

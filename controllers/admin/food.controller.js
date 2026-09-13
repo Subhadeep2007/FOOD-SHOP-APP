@@ -104,7 +104,11 @@ const create = async(
 
         const food =
             await createFood(
-                req.body
+
+                req.body,
+
+                req.files || []
+
             );
 
 
@@ -142,7 +146,9 @@ const update = async(
 
                 req.params.id,
 
-                req.body
+                req.body,
+
+                req.files || []
 
             );
 

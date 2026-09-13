@@ -1,5 +1,68 @@
 import Food from "../../models/food.model.js";
 
+import cloudinary
+from "../../config/cloudinary.js";
+
+
+// ========================================
+// UPLOAD IMAGE TO CLOUDINARY
+// ========================================
+
+const uploadImage = async(
+    file
+) => {
+
+    const base64Image =
+        file.buffer.toString(
+            "base64"
+        );
+
+    const dataUri =
+        `data:${file.mimetype};base64,${base64Image}`;
+
+
+    const result =
+        await cloudinary.uploader.upload(
+            dataUri, {
+                folder: "food-shop/foods"
+            }
+        );
+
+
+    return result.secure_url;
+};
+
+
+// ========================================
+// UPLOAD MULTIPLE IMAGES
+// ========================================
+
+const uploadImages = async(
+    files
+) => {
+
+    const images = [];
+
+
+    for (
+        const file of files
+    ) {
+
+        const imageUrl =
+            await uploadImage(
+                file
+            );
+
+
+        images.push(
+            imageUrl
+        );
+    }
+
+
+    return images;
+};
+
 
 // ========================================
 // GET ALL FOODS
@@ -16,10 +79,18 @@ const getAllFoods = async({
 }) => {
 
     const currentPage =
-        Math.max(1, Number(page));
+        Math.max(
+            1,
+            Number(page)
+        );
+
 
     const currentLimit =
-        Math.max(1, Number(limit));
+        Math.max(
+            1,
+            Number(limit)
+        );
+
 
     const skip =
         (currentPage - 1) *
@@ -109,17 +180,25 @@ const getAllFoods = async({
     ] = await Promise.all([
 
         Food.find(query)
+
         .populate(
             "category",
             "name slug"
         )
+
         .sort({
             createdAt: -1
         })
-        .skip(skip)
-        .limit(currentLimit),
 
-        Food.countDocuments(query)
+        .skip(skip)
+
+        .limit(
+            currentLimit
+        ),
+
+        Food.countDocuments(
+            query
+        )
 
     ]);
 
@@ -187,13 +266,36 @@ const getFoodById = async(
 // ========================================
 
 const createFood = async(
-    foodData
+    foodData,
+    files = []
 ) => {
 
+    let images = [];
+
+
+    // ========================================
+    // UPLOAD FOOD IMAGES
+    // ========================================
+
+    if (
+        files.length > 0
+    ) {
+
+        images =
+            await uploadImages(
+                files
+            );
+    }
+
+
     const food =
-        await Food.create(
-            foodData
-        );
+        await Food.create({
+
+            ...foodData,
+
+            images
+
+        });
 
 
     return await Food.findById(
@@ -212,7 +314,8 @@ const createFood = async(
 
 const updateFood = async(
     foodId,
-    foodData
+    foodData,
+    files = []
 ) => {
 
     const food =
@@ -234,7 +337,9 @@ const updateFood = async(
     }
 
 
-    Object.keys(foodData).forEach(
+    Object.keys(
+        foodData
+    ).forEach(
         (key) => {
 
             if (
@@ -248,6 +353,26 @@ const updateFood = async(
 
         }
     );
+
+
+    // ========================================
+    // UPDATE IMAGES
+    // ========================================
+
+    if (
+        files.length > 0
+    ) {
+
+        const newImages =
+            await uploadImages(
+                files
+            );
+
+
+        food.images =
+            newImages;
+
+    }
 
 
     await food.save();
@@ -299,6 +424,7 @@ const updateFoodPrice = async(
         const numericPrice =
             Number(price);
 
+
         if (
             Number.isNaN(
                 numericPrice
@@ -316,6 +442,7 @@ const updateFoodPrice = async(
             throw error;
         }
 
+
         food.price =
             numericPrice;
     }
@@ -329,6 +456,7 @@ const updateFoodPrice = async(
             Number(
                 discountPercentage
             );
+
 
         if (
             Number.isNaN(
@@ -347,6 +475,7 @@ const updateFoodPrice = async(
 
             throw error;
         }
+
 
         food.discountPercentage =
             numericDiscount;
@@ -523,10 +652,9 @@ const deleteFood = async(
     }
 
 
-    // Soft delete
-
     food.isActive =
         false;
+
 
     food.isAvailable =
         false;

@@ -21,8 +21,13 @@ const create = async(
 
         const food =
             await createFood(
-                req.body
+
+                req.body,
+
+                req.files || []
+
             );
+
 
         return res.status(201).json({
 
@@ -38,6 +43,7 @@ const create = async(
 
         next(error);
     }
+
 };
 
 
@@ -55,6 +61,7 @@ const getAll = async(
 
         const result =
             await getFoods({
+
                 search: req.query.search,
 
                 category: req.query.category,
@@ -70,6 +77,7 @@ const getAll = async(
                 page: req.query.page || 1,
 
                 limit: req.query.limit || 12
+
             });
 
 
@@ -85,6 +93,7 @@ const getAll = async(
 
         next(error);
     }
+
 };
 
 
@@ -115,6 +124,7 @@ const getOne = async(
                 message: "Food not found"
 
             });
+
         }
 
 
@@ -130,6 +140,7 @@ const getOne = async(
 
         next(error);
     }
+
 };
 
 
@@ -147,8 +158,13 @@ const update = async(
 
         const food =
             await updateFood(
+
                 req.params.id,
-                req.body
+
+                req.body,
+
+                req.files || []
+
             );
 
 
@@ -166,6 +182,7 @@ const update = async(
 
         next(error);
     }
+
 };
 
 
@@ -198,13 +215,24 @@ const remove = async(
 
         next(error);
     }
+
 };
 
 
+// ========================================
+// EXPORTS
+// ========================================
+
 export {
+
     create,
+
     getAll,
+
     getOne,
+
     update,
+
     remove
+
 };

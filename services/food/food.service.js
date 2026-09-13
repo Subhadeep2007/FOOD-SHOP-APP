@@ -1,5 +1,12 @@
 import Food from "../../models/food.model.js";
 
+import cloudinary
+from "../../config/cloudinary.js";
+
+import streamifier
+from "streamifier";
+
+
 const createSlug = (name) => {
 
     return name
@@ -7,6 +14,94 @@ const createSlug = (name) => {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
+
+};
+
+
+// ========================================
+// UPLOAD IMAGE TO CLOUDINARY
+// ========================================
+
+const uploadImage = async(
+    file
+) => {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            const uploadStream =
+                cloudinary
+                .uploader
+                .upload_stream(
+
+                    {
+                        folder: "food-shop/foods"
+                    },
+
+                    (
+                        error,
+                        result
+                    ) => {
+
+                        if (error) {
+
+                            reject(
+                                error
+                            );
+
+                            return;
+                        }
+
+
+                        resolve(
+                            result.secure_url
+                        );
+
+                    }
+
+                );
+
+
+            streamifier
+                .createReadStream(
+                    file.buffer
+                )
+                .pipe(
+                    uploadStream
+                );
+
+        }
+    );
+};
+
+
+// ========================================
+// UPLOAD MULTIPLE IMAGES
+// ========================================
+
+const uploadImages = async(
+    files
+) => {
+
+    const images = [];
+
+
+    for (
+        const file of files
+    ) {
+
+        const imageUrl =
+            await uploadImage(
+                file
+            );
+
+        images.push(
+            imageUrl
+        );
+    }
+
+
+    return images;
 };
 
 
@@ -14,15 +109,22 @@ const createSlug = (name) => {
 // CREATE FOOD
 // ========================================
 
-const createFood = async(data) => {
+const createFood = async(
+    data,
+    files = []
+) => {
 
     const slug =
-        createSlug(data.name);
+        createSlug(
+            data.name
+        );
+
 
     const existingFood =
         await Food.findOne({
             slug
         });
+
 
     if (existingFood) {
 
@@ -36,9 +138,29 @@ const createFood = async(data) => {
         throw error;
     }
 
+
+    let images = [];
+
+
+    if (
+        files.length > 0
+    ) {
+
+        images =
+            await uploadImages(
+                files
+            );
+    }
+
+
     return Food.create({
+
         ...data,
-        slug
+
+        slug,
+
+        images
+
     });
 };
 
@@ -59,47 +181,76 @@ const getFoods = async({
 }) => {
 
     const query = {
+
         isActive: true
+
     };
 
-    // Search
+
+    // ========================================
+    // SEARCH
+    // ========================================
+
     if (search) {
 
         query.$or = [
 
             {
+
                 name: {
+
                     $regex: search,
+
                     $options: "i"
+
                 }
+
             },
 
             {
+
                 description: {
+
                     $regex: search,
+
                     $options: "i"
+
                 }
+
             }
 
         ];
     }
 
 
-    // Category
+    // ========================================
+    // CATEGORY
+    // ========================================
+
     if (category) {
+
         query.category =
             category;
+
     }
 
 
-    // Food type
+    // ========================================
+    // FOOD TYPE
+    // ========================================
+
     if (foodType) {
+
         query.foodType =
             foodType;
+
     }
 
 
-    // Price
+    // ========================================
+    // PRICE
+    // ========================================
+
     if (
         minPrice !== undefined ||
         maxPrice !== undefined
@@ -107,31 +258,48 @@ const getFoods = async({
 
         query.price = {};
 
+
         if (
             minPrice !== undefined
         ) {
+
             query.price.$gte =
-                Number(minPrice);
+                Number(
+                    minPrice
+                );
+
         }
+
 
         if (
             maxPrice !== undefined
         ) {
+
             query.price.$lte =
-                Number(maxPrice);
+                Number(
+                    maxPrice
+                );
+
         }
+
     }
 
 
     let sortOption = {
+
         createdAt: -1
+
     };
 
 
-    if (sort === "price-low") {
+    if (
+        sort === "price-low"
+    ) {
 
         sortOption = {
+
             price: 1
+
         };
 
     } else if (
@@ -139,7 +307,9 @@ const getFoods = async({
     ) {
 
         sortOption = {
+
             price: -1
+
         };
 
     } else if (
@@ -147,26 +317,45 @@ const getFoods = async({
     ) {
 
         sortOption = {
+
             rating: -1
+
         };
+
     }
 
 
     const skip =
-        (page - 1) * limit;
+        (
+            Number(page) - 1
+        ) *
+        Number(limit);
 
 
-    const [foods, total] =
+    const [
+        foods,
+        total
+    ] =
     await Promise.all([
 
         Food.find(query)
+
         .populate(
             "category",
             "name slug"
         )
-        .sort(sortOption)
-        .skip(skip)
-        .limit(Number(limit)),
+
+        .sort(
+            sortOption
+        )
+
+        .skip(
+            skip
+        )
+
+        .limit(
+            Number(limit)
+        ),
 
         Food.countDocuments(
             query
@@ -188,12 +377,14 @@ const getFoods = async({
             total,
 
             pages: Math.ceil(
-                total / limit
+                total /
+                Number(limit)
             )
 
         }
 
     };
+
 };
 
 
@@ -206,12 +397,20 @@ const getFoodById = async(
 ) => {
 
     return Food.findOne({
-        _id: foodId,
-        isActive: true
-    }).populate(
-        "category",
-        "name slug"
-    );
+
+            _id: foodId,
+
+            isActive: true
+
+        })
+        .populate(
+
+            "category",
+
+            "name slug"
+
+        );
+
 };
 
 
@@ -221,11 +420,14 @@ const getFoodById = async(
 
 const updateFood = async(
     foodId,
-    data
+    data,
+    files = []
 ) => {
 
     const updateData = {
+
         ...data
+
     };
 
 
@@ -235,17 +437,45 @@ const updateFood = async(
             createSlug(
                 data.name
             );
+
+    }
+
+
+    // ========================================
+    // UPDATE IMAGE
+    // ========================================
+
+    if (
+        files.length > 0
+    ) {
+
+        updateData.images =
+            await uploadImages(
+                files
+            );
+
     }
 
 
     const food =
-        await Food.findOneAndUpdate({
+        await Food.findOneAndUpdate(
+
+            {
+
                 _id: foodId
+
             },
-            updateData, {
+
+            updateData,
+
+            {
+
                 new: true,
+
                 runValidators: true
+
             }
+
         );
 
 
@@ -263,6 +493,7 @@ const updateFood = async(
 
 
     return food;
+
 };
 
 
@@ -276,12 +507,23 @@ const deleteFood = async(
 
     const food =
         await Food.findByIdAndUpdate(
-            foodId, {
+
+            foodId,
+
+            {
+
                 isActive: false,
+
                 isAvailable: false
-            }, {
+
+            },
+
+            {
+
                 new: true
+
             }
+
         );
 
 
@@ -299,13 +541,24 @@ const deleteFood = async(
 
 
     return food;
+
 };
 
 
+// ========================================
+// EXPORTS
+// ========================================
+
 export {
+
     createFood,
+
     getFoods,
+
     getFoodById,
+
     updateFood,
+
     deleteFood
+
 };
