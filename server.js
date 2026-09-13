@@ -7,7 +7,8 @@ import app from "./app.js";
 import connectDatabase
 from "./config/database.js";
 
-import { Server } from "socket.io";
+import initializeSocket
+from "./socket/socket.js";
 
 
 // ========================================
@@ -23,7 +24,9 @@ const PORT =
 // ========================================
 
 const httpServer =
-    http.createServer(app);
+    http.createServer(
+        app
+    );
 
 
 // ========================================
@@ -31,104 +34,18 @@ const httpServer =
 // ========================================
 
 const io =
-    new Server(
-        httpServer, {
-            cors: {
-
-                origin: process.env.FRONTEND_URL,
-
-                credentials: true
-            }
-        }
+    initializeSocket(
+        httpServer
     );
 
 
 // ========================================
-// SOCKET CONNECTION
+// MAKE SOCKET.IO AVAILABLE
 // ========================================
 
-io.on(
-    "connection",
-    (socket) => {
-
-        console.log(
-            `Socket connected: ${socket.id}`
-        );
-
-
-        // ----------------------------------------
-        // USER JOINS ORDER ROOM
-        // ----------------------------------------
-
-        socket.on(
-            "join-order-room",
-            (orderId) => {
-
-                if (!orderId) {
-                    return;
-                }
-
-
-                const room =
-                    `order:${orderId}`;
-
-
-                socket.join(
-                    room
-                );
-
-
-                console.log(
-                    `Socket ${socket.id} joined ${room}`
-                );
-            }
-        );
-
-
-        // ----------------------------------------
-        // DELIVERY PARTNER JOINS ORDER ROOM
-        // ----------------------------------------
-
-        socket.on(
-            "join-delivery-room",
-            (orderId) => {
-
-                if (!orderId) {
-                    return;
-                }
-
-
-                const room =
-                    `order:${orderId}`;
-
-
-                socket.join(
-                    room
-                );
-
-
-                console.log(
-                    `Delivery socket ${socket.id} joined ${room}`
-                );
-            }
-        );
-
-
-        // ----------------------------------------
-        // DISCONNECT
-        // ----------------------------------------
-
-        socket.on(
-            "disconnect",
-            (reason) => {
-
-                console.log(
-                    `Socket disconnected: ${socket.id} | ${reason}`
-                );
-            }
-        );
-
-    }
+app.set(
+    "io",
+    io
 );
 
 
@@ -144,27 +61,39 @@ const startServer = async() => {
 
 
         httpServer.listen(
+
             PORT,
+
             () => {
 
                 console.log(
+
                     `Food Shop server running on port ${PORT}`
+
                 );
 
+
                 console.log(
+
                     `Frontend:
 ${process.env.FRONTEND_URL}`
+
                 );
 
             }
+
         );
 
     } catch (error) {
 
         console.error(
+
             "Server startup failed:",
+
             error.message
+
         );
+
 
         process.exit(1);
     }

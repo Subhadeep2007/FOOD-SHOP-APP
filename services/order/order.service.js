@@ -17,6 +17,11 @@ import {
     createNotification
 } from "../notification/notification.service.js";
 
+import {
+    broadcastOrderStatus,
+    broadcastOrderCancellation
+} from "../../socket/order.socket.js";
+
 
 // ========================================
 // CONSTANTS
@@ -191,8 +196,7 @@ const createOrder = async({
 
                 image: food.images &&
                     food.images.length > 0 ?
-                    food.images[0] :
-                    "",
+                    food.images[0] : "",
 
                 quantity: cartItem.quantity,
 
@@ -358,7 +362,9 @@ const createOrder = async({
 
 
         await order.save({
+
             session
+
         });
 
 
@@ -415,28 +421,38 @@ const createOrder = async({
                 await Food.findOneAndUpdate(
 
                     {
+
                         _id: item.food._id,
 
                         stock: {
+
                             $gte: item.quantity
+
                         },
 
                         isActive: true,
 
                         isAvailable: true
+
                     },
 
                     {
+
                         $inc: {
+
                             stock:
                                 -item.quantity
+
                         }
+
                     },
 
                     {
+
                         new: true,
 
                         session
+
                     }
 
                 );
@@ -466,15 +482,21 @@ const createOrder = async({
                 await Food.updateOne(
 
                     {
+
                         _id: updatedFood._id
+
                     },
 
                     {
+
                         isAvailable: false
+
                     },
 
                     {
+
                         session
+
                     }
 
                 );
@@ -490,7 +512,9 @@ const createOrder = async({
 
 
         await cart.save({
+
             session
+
         });
 
 
@@ -503,9 +527,7 @@ const createOrder = async({
 
         await createNotification({
 
-            userId:
-
-                userId,
+            userId: userId,
 
             type: "ORDER",
 
@@ -705,7 +727,9 @@ const cancelMyOrder = async(
 
 
             await food.save({
+
                 session
+
             });
         }
 
@@ -729,11 +753,26 @@ const cancelMyOrder = async(
 
 
         await order.save({
+
             session
+
         });
 
 
         await session.commitTransaction();
+
+
+        // ========================================
+        // LIVE SOCKET EVENT
+        // ========================================
+
+        await broadcastOrderCancellation(
+
+            null,
+
+            order
+
+        );
 
 
         // ========================================
@@ -822,7 +861,8 @@ const getAllOrders = async({
 
     const skip =
         (
-            currentPage - 1
+            currentPage -
+            1
         ) *
         currentLimit;
 
@@ -835,27 +875,15 @@ const getAllOrders = async({
 
         Order.find(query)
 
-        // ========================================
-        // CUSTOMER DETAILS
-        // ========================================
-
         .populate(
             "user",
             "name email profileImage role isActive"
         )
 
-        // ========================================
-        // DELIVERY PARTNER DETAILS
-        // ========================================
-
         .populate(
             "deliveryPartner",
             "name email profileImage"
         )
-
-        // ========================================
-        // PAYMENT DETAILS
-        // ========================================
 
         .populate(
             "payment",
@@ -863,8 +891,10 @@ const getAllOrders = async({
         )
 
         .sort({
+
             createdAt:
                 -1
+
         })
 
         .skip(
@@ -893,9 +923,7 @@ const getAllOrders = async({
 
             limit: currentLimit,
 
-            total:
-
-                total,
+            total: total,
 
             pages: Math.ceil(
                 total /
@@ -920,27 +948,15 @@ const getAdminOrderById = async(
         orderId
     )
 
-    // ========================================
-    // CUSTOMER DETAILS
-    // ========================================
-
     .populate(
         "user",
         "name email profileImage role isActive"
     )
 
-    // ========================================
-    // DELIVERY PARTNER
-    // ========================================
-
     .populate(
         "deliveryPartner",
         "name email profileImage"
     )
-
-    // ========================================
-    // PAYMENT DETAILS
-    // ========================================
 
     .populate(
         "payment",
@@ -985,17 +1001,13 @@ const updateOrderStatus = async(
 
         PLACED: [
 
-            "CONFIRMED",
-
-            "CANCELLED"
+            "CONFIRMED"
 
         ],
 
         CONFIRMED: [
 
-            "PREPARING",
-
-            "CANCELLED"
+            "PREPARING"
 
         ],
 
@@ -1050,6 +1062,21 @@ const updateOrderStatus = async(
 
 
     await order.save();
+
+
+    // ========================================
+    // LIVE SOCKET STATUS EVENT
+    // ========================================
+
+    await broadcastOrderStatus(
+
+        null,
+
+        order._id,
+
+        newStatus
+
+    );
 
 
     // ========================================
@@ -1174,7 +1201,9 @@ const cancelOrderByAdmin = async(
 
 
             await food.save({
+
                 session
+
             });
         }
 
@@ -1198,11 +1227,26 @@ const cancelOrderByAdmin = async(
 
 
         await order.save({
+
             session
+
         });
 
 
         await session.commitTransaction();
+
+
+        // ========================================
+        // LIVE SOCKET EVENT
+        // ========================================
+
+        await broadcastOrderCancellation(
+
+            null,
+
+            order
+
+        );
 
 
         // ========================================
