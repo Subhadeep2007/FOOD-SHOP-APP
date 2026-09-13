@@ -25,6 +25,20 @@ from "./routes/payment.routes.js";
 
 import webhookRoutes
 from "./routes/webhook.routes.js";
+import refundRoutes
+from "./routes/refund.routes.js";
+
+import reviewRoutes
+from "./routes/review.routes.js";
+
+import favoriteRoutes
+from "./routes/favorite.routes.js";
+
+import couponRoutes
+from "./routes/coupon.routes.js";
+
+import notificationRoutes
+from "./routes/notification.routes.js";
 const app = express();
 
 
@@ -155,6 +169,31 @@ app.use(
 app.use(
     "/api/payments",
     paymentRoutes
+);
+
+app.use(
+    "/api/refunds",
+    refundRoutes
+);
+
+app.use(
+    "/api/reviews",
+    reviewRoutes
+);
+
+app.use(
+    "/api/favorites",
+    favoriteRoutes
+);
+
+app.use(
+    "/api/coupons",
+    couponRoutes
+);
+
+app.use(
+    "/api/notifications",
+    notificationRoutes
 );
 // ========================================
 // 404 HANDLER

@@ -4,16 +4,27 @@ import Order from "../../models/order.model.js";
 import Cart from "../../models/cart.model.js";
 import Food from "../../models/food.model.js";
 import Address from "../../models/address.model.js";
-
 import generateOrderId
 from "../../utils/generateOrderId.js";
+
+import {
+    validateCoupon
+} from "../coupon/coupon.service.js";
+
+import CouponUsage
+from "../../models/couponUsage.model.js";
+
+import Coupon
+from "../../models/coupon.model.js";
+
+import {
+    createNotification
+} from "../notification/notification.service.js";
 
 
 // ========================================
 // CONSTANTS
 // ========================================
-
-const DELIVERY_FEE = 40;
 
 const TAX_PERCENTAGE = 0;
 
@@ -25,7 +36,8 @@ const TAX_PERCENTAGE = 0;
 const createOrder = async({
     userId,
     addressId,
-    paymentMethod
+    paymentMethod,
+    couponCode
 }) => {
 
     const session =
@@ -117,7 +129,7 @@ const createOrder = async({
 
                 const error =
                     new Error(
-                        `Food is no longer available`
+                        "Food is no longer available"
                     );
 
                 error.statusCode = 400;
@@ -181,8 +193,10 @@ const createOrder = async({
 
                 name: food.name,
 
-                image: food.images && food.images.length > 0 ?
-                    food.images[0] : "",
+                image: food.images &&
+                    food.images.length > 0 ?
+                    food.images[0] :
+                    "",
 
                 quantity: cartItem.quantity,
 
@@ -203,13 +217,57 @@ const createOrder = async({
 
 
         // ========================================
+        // COUPON VALIDATION
+        // ========================================
+
+        let discount = 0;
+
+        let appliedCoupon = null;
+
+
+        if (couponCode) {
+
+            const couponResult =
+                await validateCoupon({
+
+                    userId,
+
+                    code: couponCode,
+
+                    orderAmount: subtotal
+
+                });
+
+
+            discount =
+                couponResult.discountAmount;
+
+
+            appliedCoupon =
+                couponResult.coupon;
+        }
+
+
+        // ========================================
         // PRICE CALCULATION
         // ========================================
 
-        const discount = 0;
+        let deliveryFee;
 
-        const deliveryFee =
-            DELIVERY_FEE;
+
+        if (subtotal <= 100) {
+
+            deliveryFee = 5;
+
+        } else if (subtotal <= 1000) {
+
+            deliveryFee = 15;
+
+        } else {
+
+            deliveryFee = 40;
+        }
+
 
         const tax =
             Number(
@@ -294,7 +352,11 @@ const createOrder = async({
 
                 paymentStatus: "PENDING",
 
-                status: "PLACED"
+                status: "PLACED",
+
+                coupon: appliedCoupon ?
+                    appliedCoupon._id :
+                    null
 
             });
 
@@ -302,6 +364,47 @@ const createOrder = async({
         await order.save({
             session
         });
+
+
+        // ========================================
+        // COUPON USAGE
+        // ========================================
+
+        if (appliedCoupon) {
+
+            await CouponUsage.create(
+                [{
+
+                    coupon: appliedCoupon._id,
+
+                    user: userId,
+
+                    order: order._id,
+
+                    discountAmount: discount
+
+                }], {
+                    session
+                }
+            );
+
+
+            await Coupon.findByIdAndUpdate(
+
+                appliedCoupon._id,
+
+                {
+                    $inc: {
+                        usedCount: 1
+                    }
+                },
+
+                {
+                    session
+                }
+
+            );
+        }
 
 
         // ========================================
@@ -340,6 +443,7 @@ const createOrder = async({
 
                         session
                     }
+
                 );
 
 
@@ -376,6 +480,7 @@ const createOrder = async({
                     {
                         session
                     }
+
                 );
             }
         }
@@ -393,6 +498,33 @@ const createOrder = async({
 
 
         await session.commitTransaction();
+
+
+        // ========================================
+        // ORDER NOTIFICATION
+        // ========================================
+
+        await createNotification({
+
+            userId,
+
+            type: "ORDER",
+
+            title: "Order placed successfully",
+
+            message: `Your order ${order.orderNumber} has been placed successfully.`,
+
+            data: {
+
+                orderId: order._id,
+
+                orderNumber: order.orderNumber,
+
+                status: order.status
+
+            }
+
+        });
 
 
         return Order.findById(
@@ -425,10 +557,14 @@ const getMyOrders = async(
 ) => {
 
     return Order.find({
+
             user: userId
+
         })
         .sort({
+
             createdAt: -1
+
         });
 };
 
@@ -541,6 +677,7 @@ const cancelMyOrder = async(
 
 
             if (!food) {
+
                 continue;
             }
 
@@ -568,7 +705,8 @@ const cancelMyOrder = async(
             "CANCELLED";
 
         order.cancellationReason =
-            reason || "Cancelled by customer";
+            reason ||
+            "Cancelled by customer";
 
         order.cancelledBy =
             "customer";
@@ -577,15 +715,39 @@ const cancelMyOrder = async(
             new Date();
 
 
-        // Payment is handled by Day 5
-        // and refund by Day 6.
-
         await order.save({
             session
         });
 
 
         await session.commitTransaction();
+
+
+        // ========================================
+        // CANCELLATION NOTIFICATION
+        // ========================================
+
+        await createNotification({
+
+            userId,
+
+            type: "ORDER",
+
+            title: "Order cancelled",
+
+            message: `Your order ${order.orderNumber} has been cancelled.`,
+
+            data: {
+
+                orderId: order._id,
+
+                orderNumber: order.orderNumber,
+
+                status: order.status
+
+            }
+
+        });
 
 
         return order;
@@ -617,6 +779,7 @@ const getAllOrders = async({
 
 
     if (status) {
+
         query.status =
             status;
     }
@@ -744,25 +907,37 @@ const updateOrderStatus = async(
     const allowedTransitions = {
 
         PLACED: [
+
             "CONFIRMED",
+
             "CANCELLED"
+
         ],
 
         CONFIRMED: [
+
             "PREPARING",
+
             "CANCELLED"
+
         ],
 
         PREPARING: [
+
             "READY_FOR_PICKUP"
+
         ],
 
         READY_FOR_PICKUP: [
+
             "OUT_FOR_DELIVERY"
+
         ],
 
         OUT_FOR_DELIVERY: [
+
             "DELIVERED"
+
         ],
 
         DELIVERED: [],
@@ -798,6 +973,33 @@ const updateOrderStatus = async(
 
 
     await order.save();
+
+
+    // ========================================
+    // STATUS NOTIFICATION
+    // ========================================
+
+    await createNotification({
+
+        userId: order.user,
+
+        type: "ORDER",
+
+        title: "Order status updated",
+
+        message: `Your order ${order.orderNumber} is now ${newStatus}.`,
+
+        data: {
+
+            orderId: order._id,
+
+            orderNumber: order.orderNumber,
+
+            status: newStatus
+
+        }
+
+    });
 
 
     return order;
@@ -875,12 +1077,14 @@ const cancelOrderByAdmin = async(
 
 
             if (!food) {
+
                 continue;
             }
 
 
             food.stock +=
                 item.quantity;
+
 
             food.isAvailable =
                 food.stock > 0;
@@ -914,6 +1118,33 @@ const cancelOrderByAdmin = async(
         await session.commitTransaction();
 
 
+        // ========================================
+        // ADMIN CANCELLATION NOTIFICATION
+        // ========================================
+
+        await createNotification({
+
+            userId: order.user,
+
+            type: "ORDER",
+
+            title: "Order cancelled",
+
+            message: `Your order ${order.orderNumber} has been cancelled by the restaurant.`,
+
+            data: {
+
+                orderId: order._id,
+
+                orderNumber: order.orderNumber,
+
+                status: order.status
+
+            }
+
+        });
+
+
         return order;
 
     } catch (error) {
@@ -929,13 +1160,26 @@ const cancelOrderByAdmin = async(
 };
 
 
+// ========================================
+// EXPORTS
+// ========================================
+
 export {
+
     createOrder,
+
     getMyOrders,
+
     getMyOrderById,
+
     cancelMyOrder,
+
     getAllOrders,
+
     getAdminOrderById,
+
     updateOrderStatus,
+
     cancelOrderByAdmin
+
 };
