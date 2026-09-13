@@ -203,7 +203,17 @@ const orderSchema =
             ],
             required: true
         },
+        payment: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Payment",
+            default: null
+        },
 
+        razorpayOrderId: {
+            type: String,
+            default: null,
+            index: true
+        },
         paymentStatus: {
             type: String,
             enum: [

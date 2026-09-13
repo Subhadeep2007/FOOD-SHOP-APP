@@ -18,6 +18,13 @@ import addressRoutes
 from "./routes/address.routes.js";
 import orderRoutes
 from "./routes/order.routes.js";
+
+
+import paymentRoutes
+from "./routes/payment.routes.js";
+
+import webhookRoutes
+from "./routes/webhook.routes.js";
 const app = express();
 
 
@@ -131,6 +138,23 @@ app.use(
 app.use(
     "/api/orders",
     orderRoutes
+);
+
+// ========================================
+// RAZORPAY WEBHOOK
+// MUST COME BEFORE express.json()
+// ========================================
+
+app.use(
+    "/api/webhooks",
+    webhookRoutes
+);
+
+
+
+app.use(
+    "/api/payments",
+    paymentRoutes
 );
 // ========================================
 // 404 HANDLER
