@@ -1,44 +1,7 @@
 import {
-    createCategory,
     getCategories,
-    getCategoryById,
-    updateCategory,
-    deleteCategory
+    getCategoryById
 } from "../../services/category/category.service.js";
-
-
-// ========================================
-// CREATE
-// ========================================
-
-const create = async(
-    req,
-    res,
-    next
-) => {
-
-    try {
-
-        const category =
-            await createCategory(
-                req.body
-            );
-
-        return res.status(201).json({
-
-            success: true,
-
-            message: "Category created successfully",
-
-            data: category
-
-        });
-
-    } catch (error) {
-
-        next(error);
-    }
-};
 
 
 // ========================================
@@ -56,6 +19,7 @@ const getAll = async(
         const categories =
             await getCategories();
 
+
         return res.status(200).json({
 
             success: true,
@@ -67,7 +31,9 @@ const getAll = async(
     } catch (error) {
 
         next(error);
+
     }
+
 };
 
 
@@ -88,6 +54,7 @@ const getOne = async(
                 req.params.id
             );
 
+
         if (!category) {
 
             return res.status(404).json({
@@ -97,8 +64,10 @@ const getOne = async(
                 message: "Category not found"
 
             });
+
         }
 
+
         return res.status(200).json({
 
             success: true,
@@ -110,80 +79,20 @@ const getOne = async(
     } catch (error) {
 
         next(error);
+
     }
+
 };
 
 
 // ========================================
-// UPDATE
+// EXPORTS
 // ========================================
-
-const update = async(
-    req,
-    res,
-    next
-) => {
-
-    try {
-
-        const category =
-            await updateCategory(
-                req.params.id,
-                req.body
-            );
-
-        return res.status(200).json({
-
-            success: true,
-
-            message: "Category updated successfully",
-
-            data: category
-
-        });
-
-    } catch (error) {
-
-        next(error);
-    }
-};
-
-
-// ========================================
-// DELETE
-// ========================================
-
-const remove = async(
-    req,
-    res,
-    next
-) => {
-
-    try {
-
-        await deleteCategory(
-            req.params.id
-        );
-
-        return res.status(200).json({
-
-            success: true,
-
-            message: "Category deleted successfully"
-
-        });
-
-    } catch (error) {
-
-        next(error);
-    }
-};
-
 
 export {
-    create,
+
     getAll,
-    getOne,
-    update,
-    remove
+
+    getOne
+
 };
