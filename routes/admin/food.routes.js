@@ -13,6 +13,16 @@ import upload
 from "../../middleware/upload.middleware.js";
 
 
+import validate
+from "../../middleware/validate.middleware.js";
+
+
+import {
+    foodSchema,
+    updateFoodSchema
+} from "../../validators/food.validator.js";
+
+
 import {
     getAll,
     getOne,
@@ -34,15 +44,10 @@ const router =
 // ========================================
 
 router.get(
-
     "/",
-
     authMiddleware,
-
     adminMiddleware,
-
     getAll
-
 );
 
 
@@ -51,15 +56,10 @@ router.get(
 // ========================================
 
 router.get(
-
     "/:id",
-
     authMiddleware,
-
     adminMiddleware,
-
     getOne
-
 );
 
 
@@ -68,20 +68,17 @@ router.get(
 // ========================================
 
 router.post(
-
     "/",
-
     authMiddleware,
-
     adminMiddleware,
-
     upload.array(
         "images",
         5
     ),
-
+    validate(
+        foodSchema
+    ),
     create
-
 );
 
 
@@ -90,20 +87,17 @@ router.post(
 // ========================================
 
 router.patch(
-
     "/:id",
-
     authMiddleware,
-
     adminMiddleware,
-
     upload.array(
         "images",
         5
     ),
-
+    validate(
+        updateFoodSchema
+    ),
     update
-
 );
 
 
@@ -112,15 +106,10 @@ router.patch(
 // ========================================
 
 router.patch(
-
     "/:id/price",
-
     authMiddleware,
-
     adminMiddleware,
-
     updatePrice
-
 );
 
 
@@ -129,15 +118,10 @@ router.patch(
 // ========================================
 
 router.patch(
-
     "/:id/stock",
-
     authMiddleware,
-
     adminMiddleware,
-
     updateStock
-
 );
 
 
@@ -146,15 +130,10 @@ router.patch(
 // ========================================
 
 router.patch(
-
     "/:id/availability",
-
     authMiddleware,
-
     adminMiddleware,
-
     updateAvailability
-
 );
 
 
@@ -163,15 +142,10 @@ router.patch(
 // ========================================
 
 router.delete(
-
     "/:id",
-
     authMiddleware,
-
     adminMiddleware,
-
     remove
-
 );
 
 

@@ -11,7 +11,7 @@ import {
 
 
 // ========================================
-// GET ALL FOODS
+// GET ALL
 // ========================================
 
 const getAll = async(
@@ -53,12 +53,14 @@ const getAll = async(
     } catch (error) {
 
         next(error);
+
     }
+
 };
 
 
 // ========================================
-// GET SINGLE FOOD
+// GET ONE
 // ========================================
 
 const getOne = async(
@@ -86,12 +88,14 @@ const getOne = async(
     } catch (error) {
 
         next(error);
+
     }
+
 };
 
 
 // ========================================
-// CREATE FOOD
+// CREATE
 // ========================================
 
 const create = async(
@@ -125,12 +129,14 @@ const create = async(
     } catch (error) {
 
         next(error);
+
     }
+
 };
 
 
 // ========================================
-// UPDATE FOOD
+// UPDATE
 // ========================================
 
 const update = async(
@@ -166,7 +172,9 @@ const update = async(
     } catch (error) {
 
         next(error);
+
     }
+
 };
 
 
@@ -207,7 +215,9 @@ const updatePrice = async(
     } catch (error) {
 
         next(error);
+
     }
+
 };
 
 
@@ -246,7 +256,9 @@ const updateStock = async(
     } catch (error) {
 
         next(error);
+
     }
+
 };
 
 
@@ -285,12 +297,14 @@ const updateAvailability = async(
     } catch (error) {
 
         next(error);
+
     }
+
 };
 
 
 // ========================================
-// DELETE FOOD
+// DELETE
 // ========================================
 
 const remove = async(
@@ -318,7 +332,9 @@ const remove = async(
     } catch (error) {
 
         next(error);
+
     }
+
 };
 
 

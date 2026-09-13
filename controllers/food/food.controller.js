@@ -1,50 +1,7 @@
 import {
-    createFood,
     getFoods,
-    getFoodById,
-    updateFood,
-    deleteFood
+    getFoodById
 } from "../../services/food/food.service.js";
-
-
-// ========================================
-// CREATE
-// ========================================
-
-const create = async(
-    req,
-    res,
-    next
-) => {
-
-    try {
-
-        const food =
-            await createFood(
-
-                req.body,
-
-                req.files || []
-
-            );
-
-
-        return res.status(201).json({
-
-            success: true,
-
-            message: "Food created successfully",
-
-            data: food
-
-        });
-
-    } catch (error) {
-
-        next(error);
-    }
-
-};
 
 
 // ========================================
@@ -92,6 +49,7 @@ const getAll = async(
     } catch (error) {
 
         next(error);
+
     }
 
 };
@@ -139,81 +97,7 @@ const getOne = async(
     } catch (error) {
 
         next(error);
-    }
 
-};
-
-
-// ========================================
-// UPDATE
-// ========================================
-
-const update = async(
-    req,
-    res,
-    next
-) => {
-
-    try {
-
-        const food =
-            await updateFood(
-
-                req.params.id,
-
-                req.body,
-
-                req.files || []
-
-            );
-
-
-        return res.status(200).json({
-
-            success: true,
-
-            message: "Food updated successfully",
-
-            data: food
-
-        });
-
-    } catch (error) {
-
-        next(error);
-    }
-
-};
-
-
-// ========================================
-// DELETE
-// ========================================
-
-const remove = async(
-    req,
-    res,
-    next
-) => {
-
-    try {
-
-        await deleteFood(
-            req.params.id
-        );
-
-
-        return res.status(200).json({
-
-            success: true,
-
-            message: "Food deleted successfully"
-
-        });
-
-    } catch (error) {
-
-        next(error);
     }
 
 };
@@ -225,14 +109,8 @@ const remove = async(
 
 export {
 
-    create,
-
     getAll,
 
-    getOne,
-
-    update,
-
-    remove
+    getOne
 
 };

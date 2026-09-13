@@ -1,168 +1,5 @@
-import Food from "../../models/food.model.js";
-
-import cloudinary
-from "../../config/cloudinary.js";
-
-import streamifier
-from "streamifier";
-
-
-const createSlug = (name) => {
-
-    return name
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "");
-
-};
-
-
-// ========================================
-// UPLOAD IMAGE TO CLOUDINARY
-// ========================================
-
-const uploadImage = async(
-    file
-) => {
-
-    return new Promise(
-        (resolve, reject) => {
-
-            const uploadStream =
-                cloudinary
-                .uploader
-                .upload_stream(
-
-                    {
-                        folder: "food-shop/foods"
-                    },
-
-                    (
-                        error,
-                        result
-                    ) => {
-
-                        if (error) {
-
-                            reject(
-                                error
-                            );
-
-                            return;
-                        }
-
-
-                        resolve(
-                            result.secure_url
-                        );
-
-                    }
-
-                );
-
-
-            streamifier
-                .createReadStream(
-                    file.buffer
-                )
-                .pipe(
-                    uploadStream
-                );
-
-        }
-    );
-};
-
-
-// ========================================
-// UPLOAD MULTIPLE IMAGES
-// ========================================
-
-const uploadImages = async(
-    files
-) => {
-
-    const images = [];
-
-
-    for (
-        const file of files
-    ) {
-
-        const imageUrl =
-            await uploadImage(
-                file
-            );
-
-        images.push(
-            imageUrl
-        );
-    }
-
-
-    return images;
-};
-
-
-// ========================================
-// CREATE FOOD
-// ========================================
-
-const createFood = async(
-    data,
-    files = []
-) => {
-
-    const slug =
-        createSlug(
-            data.name
-        );
-
-
-    const existingFood =
-        await Food.findOne({
-            slug
-        });
-
-
-    if (existingFood) {
-
-        const error =
-            new Error(
-                "Food with this name already exists"
-            );
-
-        error.statusCode = 409;
-
-        throw error;
-    }
-
-
-    let images = [];
-
-
-    if (
-        files.length > 0
-    ) {
-
-        images =
-            await uploadImages(
-                files
-            );
-    }
-
-
-    return Food.create({
-
-        ...data,
-
-        slug,
-
-        images
-
-    });
-};
+import Food
+from "../../models/food.model.js";
 
 
 // ========================================
@@ -220,6 +57,7 @@ const getFoods = async({
             }
 
         ];
+
     }
 
 
@@ -285,6 +123,10 @@ const getFoods = async({
     }
 
 
+    // ========================================
+    // SORT
+    // ========================================
+
     let sortOption = {
 
         createdAt: -1
@@ -325,11 +167,29 @@ const getFoods = async({
     }
 
 
+    // ========================================
+    // PAGINATION
+    // ========================================
+
+    const currentPage =
+        Math.max(
+            1,
+            Number(page)
+        );
+
+
+    const currentLimit =
+        Math.max(
+            1,
+            Number(limit)
+        );
+
+
     const skip =
         (
-            Number(page) - 1
+            currentPage - 1
         ) *
-        Number(limit);
+        currentLimit;
 
 
     const [
@@ -354,7 +214,7 @@ const getFoods = async({
         )
 
         .limit(
-            Number(limit)
+            currentLimit
         ),
 
         Food.countDocuments(
@@ -370,15 +230,15 @@ const getFoods = async({
 
         pagination: {
 
-            page: Number(page),
+            page: currentPage,
 
-            limit: Number(limit),
+            limit: currentLimit,
 
             total,
 
             pages: Math.ceil(
                 total /
-                Number(limit)
+                currentLimit
             )
 
         }
@@ -389,7 +249,7 @@ const getFoods = async({
 
 
 // ========================================
-// GET FOOD
+// GET SINGLE FOOD
 // ========================================
 
 const getFoodById = async(
@@ -404,143 +264,9 @@ const getFoodById = async(
 
         })
         .populate(
-
             "category",
-
             "name slug"
-
         );
-
-};
-
-
-// ========================================
-// UPDATE FOOD
-// ========================================
-
-const updateFood = async(
-    foodId,
-    data,
-    files = []
-) => {
-
-    const updateData = {
-
-        ...data
-
-    };
-
-
-    if (data.name) {
-
-        updateData.slug =
-            createSlug(
-                data.name
-            );
-
-    }
-
-
-    // ========================================
-    // UPDATE IMAGE
-    // ========================================
-
-    if (
-        files.length > 0
-    ) {
-
-        updateData.images =
-            await uploadImages(
-                files
-            );
-
-    }
-
-
-    const food =
-        await Food.findOneAndUpdate(
-
-            {
-
-                _id: foodId
-
-            },
-
-            updateData,
-
-            {
-
-                new: true,
-
-                runValidators: true
-
-            }
-
-        );
-
-
-    if (!food) {
-
-        const error =
-            new Error(
-                "Food not found"
-            );
-
-        error.statusCode = 404;
-
-        throw error;
-    }
-
-
-    return food;
-
-};
-
-
-// ========================================
-// DELETE FOOD
-// ========================================
-
-const deleteFood = async(
-    foodId
-) => {
-
-    const food =
-        await Food.findByIdAndUpdate(
-
-            foodId,
-
-            {
-
-                isActive: false,
-
-                isAvailable: false
-
-            },
-
-            {
-
-                new: true
-
-            }
-
-        );
-
-
-    if (!food) {
-
-        const error =
-            new Error(
-                "Food not found"
-            );
-
-        error.statusCode = 404;
-
-        throw error;
-    }
-
-
-    return food;
 
 };
 
@@ -551,14 +277,8 @@ const deleteFood = async(
 
 export {
 
-    createFood,
-
     getFoods,
 
-    getFoodById,
-
-    updateFood,
-
-    deleteFood
+    getFoodById
 
 };

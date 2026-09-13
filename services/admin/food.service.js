@@ -1,11 +1,34 @@
-import Food from "../../models/food.model.js";
+import Food
+from "../../models/food.model.js";
 
 import cloudinary
 from "../../config/cloudinary.js";
 
 
 // ========================================
-// UPLOAD IMAGE TO CLOUDINARY
+// CREATE SLUG
+// ========================================
+
+const createSlug = (
+    name
+) => {
+
+    return name
+        .trim()
+        .toLowerCase()
+        .replace(
+            /[^a-z0-9]+/g,
+            "-"
+        )
+        .replace(
+            /(^-|-$)/g,
+            "");
+
+};
+
+
+// ========================================
+// UPLOAD IMAGE
 // ========================================
 
 const uploadImage = async(
@@ -17,19 +40,27 @@ const uploadImage = async(
             "base64"
         );
 
+
     const dataUri =
         `data:${file.mimetype};base64,${base64Image}`;
 
 
     const result =
         await cloudinary.uploader.upload(
-            dataUri, {
+
+            dataUri,
+
+            {
+
                 folder: "food-shop/foods"
+
             }
+
         );
 
 
     return result.secure_url;
+
 };
 
 
@@ -57,15 +88,17 @@ const uploadImages = async(
         images.push(
             imageUrl
         );
+
     }
 
 
     return images;
+
 };
 
 
 // ========================================
-// GET ALL FOODS
+// GET ALL FOODS FOR ADMIN
 // ========================================
 
 const getAllFoods = async({
@@ -93,7 +126,9 @@ const getAllFoods = async({
 
 
     const skip =
-        (currentPage - 1) *
+        (
+            currentPage - 1
+        ) *
         currentLimit;
 
 
@@ -109,20 +144,31 @@ const getAllFoods = async({
         query.$or = [
 
             {
+
                 name: {
+
                     $regex: search,
+
                     $options: "i"
+
                 }
+
             },
 
             {
+
                 description: {
+
                     $regex: search,
+
                     $options: "i"
+
                 }
+
             }
 
         ];
+
     }
 
 
@@ -134,6 +180,7 @@ const getAllFoods = async({
 
         query.category =
             category;
+
     }
 
 
@@ -145,6 +192,7 @@ const getAllFoods = async({
 
         query.foodType =
             foodType;
+
     }
 
 
@@ -158,11 +206,12 @@ const getAllFoods = async({
 
         query.isAvailable =
             isAvailable === "true";
+
     }
 
 
     // ========================================
-    // ACTIVE STATUS
+    // ACTIVE
     // ========================================
 
     if (
@@ -171,13 +220,15 @@ const getAllFoods = async({
 
         query.isActive =
             isActive === "true";
+
     }
 
 
     const [
         foods,
         total
-    ] = await Promise.all([
+    ] =
+    await Promise.all([
 
         Food.find(query)
 
@@ -190,7 +241,9 @@ const getAllFoods = async({
             createdAt: -1
         })
 
-        .skip(skip)
+        .skip(
+            skip
+        )
 
         .limit(
             currentLimit
@@ -223,11 +276,12 @@ const getAllFoods = async({
         }
 
     };
+
 };
 
 
 // ========================================
-// GET SINGLE FOOD
+// GET SINGLE FOOD ADMIN
 // ========================================
 
 const getFoodById = async(
@@ -254,10 +308,12 @@ const getFoodById = async(
         error.statusCode = 404;
 
         throw error;
+
     }
 
 
     return food;
+
 };
 
 
@@ -270,12 +326,36 @@ const createFood = async(
     files = []
 ) => {
 
+    const slug =
+        createSlug(
+            foodData.name
+        );
+
+
+    const existingFood =
+        await Food.findOne({
+
+            slug
+
+        });
+
+
+    if (existingFood) {
+
+        const error =
+            new Error(
+                "Food with this name already exists"
+            );
+
+        error.statusCode = 409;
+
+        throw error;
+
+    }
+
+
     let images = [];
 
-
-    // ========================================
-    // UPLOAD FOOD IMAGES
-    // ========================================
 
     if (
         files.length > 0
@@ -285,6 +365,7 @@ const createFood = async(
             await uploadImages(
                 files
             );
+
     }
 
 
@@ -292,6 +373,8 @@ const createFood = async(
         await Food.create({
 
             ...foodData,
+
+            slug,
 
             images
 
@@ -305,6 +388,7 @@ const createFood = async(
             "category",
             "name slug"
         );
+
 };
 
 
@@ -334,8 +418,13 @@ const updateFood = async(
         error.statusCode = 404;
 
         throw error;
+
     }
 
+
+    // ========================================
+    // UPDATE FIELDS
+    // ========================================
 
     Object.keys(
         foodData
@@ -343,7 +432,8 @@ const updateFood = async(
         (key) => {
 
             if (
-                foodData[key] !== undefined
+                foodData[key] !==
+                undefined
             ) {
 
                 food[key] =
@@ -353,6 +443,20 @@ const updateFood = async(
 
         }
     );
+
+
+    // ========================================
+    // UPDATE SLUG
+    // ========================================
+
+    if (foodData.name) {
+
+        food.slug =
+            createSlug(
+                foodData.name
+            );
+
+    }
 
 
     // ========================================
@@ -385,6 +489,7 @@ const updateFood = async(
             "category",
             "name slug"
         );
+
 };
 
 
@@ -414,6 +519,7 @@ const updateFoodPrice = async(
         error.statusCode = 404;
 
         throw error;
+
     }
 
 
@@ -422,7 +528,9 @@ const updateFoodPrice = async(
     ) {
 
         const numericPrice =
-            Number(price);
+            Number(
+                price
+            );
 
 
         if (
@@ -440,16 +548,19 @@ const updateFoodPrice = async(
             error.statusCode = 400;
 
             throw error;
+
         }
 
 
         food.price =
             numericPrice;
+
     }
 
 
     if (
-        discountPercentage !== undefined
+        discountPercentage !==
+        undefined
     ) {
 
         const numericDiscount =
@@ -474,11 +585,13 @@ const updateFoodPrice = async(
             error.statusCode = 400;
 
             throw error;
+
         }
 
 
         food.discountPercentage =
             numericDiscount;
+
     }
 
 
@@ -486,6 +599,7 @@ const updateFoodPrice = async(
 
 
     return food;
+
 };
 
 
@@ -514,11 +628,14 @@ const updateFoodStock = async(
         error.statusCode = 404;
 
         throw error;
+
     }
 
 
     const numericStock =
-        Number(stock);
+        Number(
+            stock
+        );
 
 
     if (
@@ -536,6 +653,7 @@ const updateFoodStock = async(
         error.statusCode = 400;
 
         throw error;
+
     }
 
 
@@ -551,6 +669,7 @@ const updateFoodStock = async(
 
 
     return food;
+
 };
 
 
@@ -579,6 +698,7 @@ const updateFoodAvailability = async(
         error.statusCode = 404;
 
         throw error;
+
     }
 
 
@@ -595,6 +715,7 @@ const updateFoodAvailability = async(
         error.statusCode = 400;
 
         throw error;
+
     }
 
 
@@ -611,6 +732,7 @@ const updateFoodAvailability = async(
         error.statusCode = 400;
 
         throw error;
+
     }
 
 
@@ -622,6 +744,7 @@ const updateFoodAvailability = async(
 
 
     return food;
+
 };
 
 
@@ -649,8 +772,11 @@ const deleteFood = async(
         error.statusCode = 404;
 
         throw error;
+
     }
 
+
+    // Soft delete
 
     food.isActive =
         false;
@@ -668,6 +794,7 @@ const deleteFood = async(
         message: "Food deleted successfully"
 
     };
+
 };
 
 
