@@ -29,7 +29,9 @@ const create = async(
 
                 addressId: req.body.addressId,
 
-                paymentMethod: req.body.paymentMethod
+                paymentMethod: req.body.paymentMethod,
+
+                couponCode: req.body.couponCode
 
             });
 

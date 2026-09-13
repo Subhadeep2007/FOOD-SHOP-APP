@@ -1,7 +1,9 @@
 import {
     createReview,
     getFoodReviews,
-    deleteOwnReview
+    updateOwnReview,
+    deleteOwnReview,
+    getAllReviewsForAdmin
 } from "../../services/review/review.service.js";
 
 
@@ -52,6 +54,7 @@ const create = async(
 
 // ========================================
 // FOOD REVIEWS
+// PUBLIC
 // ========================================
 
 const getFood = async(
@@ -84,7 +87,52 @@ const getFood = async(
 
 
 // ========================================
-// DELETE
+// UPDATE OWN REVIEW
+// USER
+// ========================================
+
+const update = async(
+    req,
+    res,
+    next
+) => {
+
+    try {
+
+        const review =
+            await updateOwnReview(
+
+                req.user.userId,
+
+                req.params.id,
+
+                req.body.rating,
+
+                req.body.comment
+
+            );
+
+
+        return res.status(200).json({
+
+            success: true,
+
+            message: "Review updated successfully",
+
+            data: review
+
+        });
+
+    } catch (error) {
+
+        next(error);
+    }
+};
+
+
+// ========================================
+// DELETE OWN REVIEW
+// USER
 // ========================================
 
 const remove = async(
@@ -119,8 +167,41 @@ const remove = async(
 };
 
 
+// ========================================
+// ADMIN GET ALL REVIEWS
+// ========================================
+
+const getAllAdmin = async(
+    req,
+    res,
+    next
+) => {
+
+    try {
+
+        const reviews =
+            await getAllReviewsForAdmin();
+
+
+        return res.status(200).json({
+
+            success: true,
+
+            data: reviews
+
+        });
+
+    } catch (error) {
+
+        next(error);
+    }
+};
+
+
 export {
     create,
     getFood,
-    remove
+    update,
+    remove,
+    getAllAdmin
 };

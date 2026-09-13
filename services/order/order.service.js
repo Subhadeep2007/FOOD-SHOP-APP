@@ -4,18 +4,14 @@ import Order from "../../models/order.model.js";
 import Cart from "../../models/cart.model.js";
 import Food from "../../models/food.model.js";
 import Address from "../../models/address.model.js";
-import generateOrderId
-from "../../utils/generateOrderId.js";
+import generateOrderId from "../../utils/generateOrderId.js";
 
 import {
     validateCoupon
 } from "../coupon/coupon.service.js";
 
-import CouponUsage
-from "../../models/couponUsage.model.js";
-
-import Coupon
-from "../../models/coupon.model.js";
+import CouponUsage from "../../models/couponUsage.model.js";
+import Coupon from "../../models/coupon.model.js";
 
 import {
     createNotification
@@ -154,9 +150,9 @@ const createOrder = async({
             }
 
 
-            // ----------------------------------------
-            // Server-side price calculation
-            // ----------------------------------------
+            // ========================================
+            // SERVER SIDE PRICE CALCULATION
+            // ========================================
 
             const discountAmount =
                 (
@@ -255,11 +251,15 @@ const createOrder = async({
         let deliveryFee;
 
 
-        if (subtotal <= 100) {
+        if (
+            subtotal <= 100
+        ) {
 
             deliveryFee = 5;
 
-        } else if (subtotal <= 1000) {
+        } else if (
+            subtotal <= 1000
+        ) {
 
             deliveryFee = 15;
 
@@ -336,27 +336,23 @@ const createOrder = async({
 
                 items: orderItems,
 
-                deliveryAddress,
+                deliveryAddress: deliveryAddress,
 
-                subtotal,
+                subtotal: subtotal,
 
-                discount,
+                discount: discount,
 
-                deliveryFee,
+                deliveryFee: deliveryFee,
 
-                tax,
+                tax: tax,
 
-                totalAmount,
+                totalAmount: totalAmount,
 
-                paymentMethod,
+                paymentMethod: paymentMethod,
 
                 paymentStatus: "PENDING",
 
-                status: "PLACED",
-
-                coupon: appliedCoupon ?
-                    appliedCoupon._id :
-                    null
+                status: "PLACED"
 
             });
 
@@ -428,7 +424,6 @@ const createOrder = async({
                         isActive: true,
 
                         isAvailable: true
-
                     },
 
                     {
@@ -460,8 +455,9 @@ const createOrder = async({
             }
 
 
-            // Automatically unavailable
-            // when stock reaches zero.
+            // ========================================
+            // AUTO UNAVAILABLE
+            // ========================================
 
             if (
                 updatedFood.stock === 0
@@ -492,6 +488,7 @@ const createOrder = async({
 
         cart.items = [];
 
+
         await cart.save({
             session
         });
@@ -506,7 +503,9 @@ const createOrder = async({
 
         await createNotification({
 
-            userId,
+            userId:
+
+                userId,
 
             type: "ORDER",
 
@@ -532,12 +531,17 @@ const createOrder = async({
             )
             .populate(
                 "user",
-                "name email"
+                "name email profileImage"
             );
 
     } catch (error) {
 
-        await session.abortTransaction();
+        if (
+            session.inTransaction()
+        ) {
+
+            await session.abortTransaction();
+        }
 
         throw error;
 
@@ -563,7 +567,8 @@ const getMyOrders = async(
         })
         .sort({
 
-            createdAt: -1
+            createdAt:
+                -1
 
         });
 };
@@ -587,11 +592,11 @@ const getMyOrderById = async(
         })
         .populate(
             "user",
-            "name email"
+            "name email profileImage"
         )
         .populate(
             "deliveryPartner",
-            "name"
+            "name email profileImage"
         );
 };
 
@@ -637,6 +642,10 @@ const cancelMyOrder = async(
             throw error;
         }
 
+
+        // ========================================
+        // CANCELLABLE STATUS
+        // ========================================
 
         const cancellableStatuses = [
 
@@ -701,6 +710,10 @@ const cancelMyOrder = async(
         }
 
 
+        // ========================================
+        // UPDATE ORDER
+        // ========================================
+
         order.status =
             "CANCELLED";
 
@@ -724,12 +737,12 @@ const cancelMyOrder = async(
 
 
         // ========================================
-        // CANCELLATION NOTIFICATION
+        // NOTIFICATION
         // ========================================
 
         await createNotification({
 
-            userId,
+            userId: userId,
 
             type: "ORDER",
 
@@ -754,7 +767,12 @@ const cancelMyOrder = async(
 
     } catch (error) {
 
-        await session.abortTransaction();
+        if (
+            session.inTransaction()
+        ) {
+
+            await session.abortTransaction();
+        }
 
         throw error;
 
@@ -785,11 +803,28 @@ const getAllOrders = async({
     }
 
 
+    const currentPage =
+        Math.max(
+            1,
+            Number(page) || 1
+        );
+
+
+    const currentLimit =
+        Math.min(
+            100,
+            Math.max(
+                1,
+                Number(limit) || 20
+            )
+        );
+
+
     const skip =
         (
-            Number(page) - 1
+            currentPage - 1
         ) *
-        Number(limit);
+        currentLimit;
 
 
     const [
@@ -800,25 +835,46 @@ const getAllOrders = async({
 
         Order.find(query)
 
+        // ========================================
+        // CUSTOMER DETAILS
+        // ========================================
+
         .populate(
             "user",
-            "name email"
+            "name email profileImage role isActive"
         )
+
+        // ========================================
+        // DELIVERY PARTNER DETAILS
+        // ========================================
 
         .populate(
             "deliveryPartner",
-            "name"
+            "name email profileImage"
+        )
+
+        // ========================================
+        // PAYMENT DETAILS
+        // ========================================
+
+        .populate(
+            "payment",
+            "paymentMethod amount currency status razorpayOrderId razorpayPaymentId failureReason capturedAt paidAt"
         )
 
         .sort({
-            createdAt: -1
+            createdAt:
+                -1
         })
 
-        .skip(skip)
+        .skip(
+            skip
+        )
 
         .limit(
-            Number(limit)
+            currentLimit
         ),
+
 
         Order.countDocuments(
             query
@@ -833,15 +889,17 @@ const getAllOrders = async({
 
         pagination: {
 
-            page: Number(page),
+            page: currentPage,
 
-            limit: Number(limit),
+            limit: currentLimit,
 
-            total,
+            total:
+
+                total,
 
             pages: Math.ceil(
                 total /
-                Number(limit)
+                currentLimit
             )
 
         }
@@ -851,7 +909,7 @@ const getAllOrders = async({
 
 
 // ========================================
-// ADMIN GET ONE
+// ADMIN GET SINGLE ORDER
 // ========================================
 
 const getAdminOrderById = async(
@@ -859,21 +917,40 @@ const getAdminOrderById = async(
 ) => {
 
     return Order.findById(
-            orderId
-        )
-        .populate(
-            "user",
-            "name email"
-        )
-        .populate(
-            "deliveryPartner",
-            "name"
-        );
+        orderId
+    )
+
+    // ========================================
+    // CUSTOMER DETAILS
+    // ========================================
+
+    .populate(
+        "user",
+        "name email profileImage role isActive"
+    )
+
+    // ========================================
+    // DELIVERY PARTNER
+    // ========================================
+
+    .populate(
+        "deliveryPartner",
+        "name email profileImage"
+    )
+
+    // ========================================
+    // PAYMENT DETAILS
+    // ========================================
+
+    .populate(
+        "payment",
+        "paymentMethod amount currency status razorpayOrderId razorpayPaymentId failureReason capturedAt paidAt"
+    );
 };
 
 
 // ========================================
-// ADMIN UPDATE STATUS
+// ADMIN UPDATE ORDER STATUS
 // ========================================
 
 const updateOrderStatus = async(
@@ -1043,6 +1120,10 @@ const cancelOrderByAdmin = async(
         }
 
 
+        // ========================================
+        // CANNOT CANCEL
+        // ========================================
+
         if (
             [
                 "DELIVERED",
@@ -1064,7 +1145,9 @@ const cancelOrderByAdmin = async(
         }
 
 
-        // Restore stock
+        // ========================================
+        // RESTORE STOCK
+        // ========================================
 
         for (
             const item of order.items
@@ -1095,6 +1178,10 @@ const cancelOrderByAdmin = async(
             });
         }
 
+
+        // ========================================
+        // UPDATE ORDER
+        // ========================================
 
         order.status =
             "CANCELLED";
@@ -1149,7 +1236,12 @@ const cancelOrderByAdmin = async(
 
     } catch (error) {
 
-        await session.abortTransaction();
+        if (
+            session.inTransaction()
+        ) {
+
+            await session.abortTransaction();
+        }
 
         throw error;
 

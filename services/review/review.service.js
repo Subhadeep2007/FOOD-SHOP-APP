@@ -1,6 +1,11 @@
-import Review from "../../models/review.model.js";
-import Order from "../../models/order.model.js";
-import Food from "../../models/food.model.js";
+import Review
+from "../../models/review.model.js";
+
+import Order
+from "../../models/order.model.js";
+
+import Food
+from "../../models/food.model.js";
 
 
 // ========================================
@@ -108,8 +113,11 @@ const createReview = async({
 
     const reviews =
         await Review.find({
+
             food: foodId,
+
             isApproved: true
+
         });
 
 
@@ -126,12 +134,14 @@ const createReview = async({
 
 
     const averageRating =
+        reviews.length ?
         Number(
             (
                 totalRating /
                 reviews.length
             ).toFixed(1)
-        );
+        ) :
+        0;
 
 
     await Food.findByIdAndUpdate(
@@ -139,6 +149,7 @@ const createReview = async({
         foodId,
 
         {
+
             rating: averageRating,
 
             reviewCount: reviews.length
@@ -172,8 +183,131 @@ const getFoodReviews = async(
             "name profileImage"
         )
         .sort({
+
             createdAt: -1
+
         });
+};
+
+
+// ========================================
+// UPDATE OWN REVIEW
+// ========================================
+
+const updateOwnReview = async(
+    userId,
+    reviewId,
+    rating,
+    comment
+) => {
+
+    const review =
+        await Review.findOne({
+
+            _id: reviewId,
+
+            user: userId
+
+        });
+
+
+    if (!review) {
+
+        const error =
+            new Error(
+                "Review not found"
+            );
+
+        error.statusCode = 404;
+
+        throw error;
+    }
+
+
+    // ========================================
+    // UPDATE RATING
+    // ========================================
+
+    if (rating !== undefined) {
+
+        review.rating =
+            Number(rating);
+
+    }
+
+
+    // ========================================
+    // UPDATE COMMENT
+    // ========================================
+
+    if (comment !== undefined) {
+
+        review.comment =
+            comment.trim();
+
+    }
+
+
+    await review.save();
+
+
+    // ========================================
+    // UPDATE FOOD RATING
+    // ========================================
+
+    const foodId =
+        review.food;
+
+
+    const reviews =
+        await Review.find({
+
+            food: foodId,
+
+            isApproved: true
+
+        });
+
+
+    const totalRating =
+        reviews.reduce(
+            (
+                total,
+                item
+            ) =>
+            total +
+            item.rating,
+            0
+        );
+
+
+    const averageRating =
+        reviews.length ?
+        Number(
+            (
+                totalRating /
+                reviews.length
+            ).toFixed(1)
+        ) :
+        0;
+
+
+    await Food.findByIdAndUpdate(
+
+        foodId,
+
+        {
+
+            rating: averageRating,
+
+            reviewCount: reviews.length
+
+        }
+
+    );
+
+
+    return review;
 };
 
 
@@ -268,8 +402,47 @@ const deleteOwnReview = async(
 };
 
 
+// ========================================
+// ADMIN GET ALL REVIEWS
+// ========================================
+
+const getAllReviewsForAdmin = async() => {
+
+    return Review.find({})
+        .populate(
+            "user",
+            "name email profileImage isEmailVerified role isActive createdAt updatedAt"
+        )
+        .populate({
+            path: "food",
+            select: "name slug description images price discountPercentage category foodType ingredients preparationTime stock isAvailable isActive rating reviewCount createdAt updatedAt",
+            populate: {
+                path: "category",
+                select: "name slug description image isActive sortOrder createdAt updatedAt"
+            }
+        })
+        .sort({
+
+            createdAt: -1
+
+        });
+};
+
+
+// ========================================
+// EXPORTS
+// ========================================
+
 export {
+
     createReview,
+
     getFoodReviews,
-    deleteOwnReview
+
+    updateOwnReview,
+
+    deleteOwnReview,
+
+    getAllReviewsForAdmin
+
 };

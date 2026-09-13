@@ -24,7 +24,19 @@ const createOrderSchema = [
     ])
     .withMessage(
         "Payment method must be COD or ONLINE"
+    ),
+
+    body("couponCode")
+    .optional()
+    .trim()
+    .isLength({
+        min: 1,
+        max: 50
+    })
+    .withMessage(
+        "Coupon code must be between 1 and 50 characters"
     )
+
 ];
 
 
@@ -49,6 +61,7 @@ const cancelOrderSchema = [
     .withMessage(
         "Cancellation reason is too long"
     )
+
 ];
 
 
@@ -91,6 +104,7 @@ const adminOrderQuerySchema = [
     .withMessage(
         "Limit must be between 1 and 100"
     )
+
 ];
 
 
@@ -117,6 +131,7 @@ const updateOrderStatusSchema = [
     .withMessage(
         "Invalid order status"
     )
+
 ];
 
 
@@ -141,6 +156,7 @@ const adminCancelOrderSchema = [
     .withMessage(
         "Cancellation reason is too long"
     )
+
 ];
 
 
