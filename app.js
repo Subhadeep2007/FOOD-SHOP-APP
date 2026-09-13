@@ -39,6 +39,10 @@ from "./routes/coupon.routes.js";
 
 import notificationRoutes
 from "./routes/notification.routes.js";
+import adminUserRoutes
+from "./routes/admin/user.routes.js";
+import adminFoodRoutes
+from "./routes/admin/food.routes.js";
 const app = express();
 
 
@@ -194,6 +198,14 @@ app.use(
 app.use(
     "/api/notifications",
     notificationRoutes
+);
+app.use(
+    "/api/admin/users",
+    adminUserRoutes
+);
+app.use(
+    "/api/admin/foods",
+    adminFoodRoutes
 );
 // ========================================
 // 404 HANDLER
