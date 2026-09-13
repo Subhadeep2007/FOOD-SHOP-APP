@@ -1,9 +1,14 @@
 import crypto from "crypto";
 import axios from "axios";
 
-import Refund from "../../models/refund.model.js";
-import Payment from "../../models/payment.model.js";
-import Order from "../../models/order.model.js";
+import Refund
+from "../../models/refund.model.js";
+
+import Payment
+from "../../models/payment.model.js";
+
+import Order
+from "../../models/order.model.js";
 
 
 // ========================================
@@ -21,10 +26,91 @@ const RAZORPAY_API =
 const getRazorpayAuth = () => {
 
     return {
+
         username: process.env.RAZORPAY_KEY_ID,
 
         password: process.env.RAZORPAY_KEY_SECRET
+
     };
+};
+
+
+// ========================================
+// MASK BANK ACCOUNT NUMBER
+// ========================================
+
+const maskAccountNumber = (
+    accountNumber
+) => {
+
+    if (!accountNumber) {
+
+        return "";
+    }
+
+
+    const value =
+        accountNumber.toString();
+
+
+    if (
+        value.length <= 4
+    ) {
+
+        return "****";
+    }
+
+
+    return (
+        "*".repeat(
+            value.length - 4
+        ) +
+        value.slice(-4)
+    );
+};
+
+
+// ========================================
+// CUSTOMER REFUND RESPONSE
+// ========================================
+
+const formatRefundForCustomer = (
+    refund
+) => {
+
+    const refundData =
+        refund.toObject ?
+        refund.toObject() :
+        refund;
+
+
+    if (
+        refundData.bankDetails
+    ) {
+
+        refundData.bankDetails = {
+
+            accountHolderName: refundData.bankDetails.accountHolderName ||
+                "",
+
+            accountNumber: maskAccountNumber(
+                refundData.bankDetails.accountNumber
+            ),
+
+            ifscCode: refundData.bankDetails.ifscCode ||
+                "",
+
+            bankName: refundData.bankDetails.bankName ||
+                "",
+
+            accountType: refundData.bankDetails.accountType ||
+                ""
+
+        };
+    }
+
+
+    return refundData;
 };
 
 
@@ -34,7 +120,8 @@ const getRazorpayAuth = () => {
 
 const calculateRefundAmount = (
     order,
-    payment
+    payment,
+    alreadyRefundedAmount = 0
 ) => {
 
     // ========================================
@@ -47,14 +134,14 @@ const calculateRefundAmount = (
     ) {
 
         /*
-            Food refundable amount:
+            Refundable amount:
 
             Order subtotal
             -
             Coupon discount
 
-            Delivery fee, tax and any other
-            charges are NOT refundable.
+            Delivery fee, tax and other
+            charges are not refundable.
         */
 
         const foodRefundableAmount =
@@ -62,6 +149,14 @@ const calculateRefundAmount = (
                 0,
                 Number(order.subtotal || 0) -
                 Number(order.discount || 0)
+            );
+
+
+        const remainingRefundableAmount =
+            Math.max(
+                0,
+                foodRefundableAmount -
+                Number(alreadyRefundedAmount || 0)
             );
 
 
@@ -76,7 +171,7 @@ const calculateRefundAmount = (
         return {
 
             refundableAmount: Number(
-                foodRefundableAmount.toFixed(2)
+                remainingRefundableAmount.toFixed(2)
             ),
 
             nonRefundableAmount: Number(
@@ -92,8 +187,10 @@ const calculateRefundAmount = (
     // ========================================
 
     const refundableAmount =
-        Number(
-            order.totalAmount || 0
+        Math.max(
+            0,
+            Number(order.totalAmount || 0) -
+            Number(alreadyRefundedAmount || 0)
         );
 
 
@@ -106,6 +203,62 @@ const calculateRefundAmount = (
         nonRefundableAmount: 0
 
     };
+};
+
+
+// ========================================
+// GET ALREADY REFUNDED AMOUNT
+// ========================================
+
+const getAlreadyRefundedAmount = async(
+    orderId,
+    excludeRefundId = null
+) => {
+
+    const query = {
+
+        order: orderId,
+
+        status: "COMPLETED"
+
+    };
+
+
+    if (
+        excludeRefundId
+    ) {
+
+        query._id = {
+
+            $ne: excludeRefundId
+
+        };
+    }
+
+
+    const completedRefunds =
+        await Refund.find(
+            query
+        );
+
+
+    const totalRefunded =
+        completedRefunds.reduce(
+            (
+                total,
+                refund
+            ) =>
+            total +
+            Number(
+                refund.approvedAmount || 0
+            ),
+            0
+        );
+
+
+    return Number(
+        totalRefunded.toFixed(2)
+    );
 };
 
 
@@ -123,8 +276,11 @@ const createRefundRequest = async({
 
     const order =
         await Order.findOne({
+
             _id: orderId,
+
             user: userId
+
         });
 
 
@@ -169,8 +325,11 @@ const createRefundRequest = async({
 
     const payment =
         await Payment.findOne({
+
             order: order._id,
+
             user: userId
+
         });
 
 
@@ -188,12 +347,12 @@ const createRefundRequest = async({
 
 
     // ========================================
-    // ALREADY FULLY REFUNDED
+    // ONLINE PAYMENT FULL REFUND CHECK
     // ========================================
 
     if (
-        payment.status ===
-        "REFUNDED"
+        payment.paymentMethod === "ONLINE" &&
+        payment.status === "REFUNDED"
     ) {
 
         const error =
@@ -208,18 +367,29 @@ const createRefundRequest = async({
 
 
     // ========================================
-    // CALCULATE REFUNDABLE AMOUNT
+    // ALREADY COMPLETED REFUNDS
+    // ========================================
+
+    const alreadyRefundedAmount =
+        await getAlreadyRefundedAmount(
+            order._id
+        );
+
+
+    // ========================================
+    // REFUND CALCULATION
     // ========================================
 
     const refundCalculation =
         calculateRefundAmount(
             order,
-            payment
+            payment,
+            alreadyRefundedAmount
         );
 
 
     // ========================================
-    // REFUNDABLE AMOUNT CHECK
+    // NO REFUND AVAILABLE
     // ========================================
 
     if (
@@ -248,9 +418,6 @@ const createRefundRequest = async({
         refundCalculation.refundableAmount;
 
 
-    // Customer cannot request more
-    // than the calculated refundable amount.
-
     if (
         requestedAmount <= 0 ||
         requestedAmount >
@@ -278,7 +445,8 @@ const createRefundRequest = async({
     // COD BANK DETAILS
     // ========================================
 
-    let savedBankDetails = null;
+    let savedBankDetails =
+        null;
 
 
     if (
@@ -321,12 +489,13 @@ const createRefundRequest = async({
                 .trim(),
 
             accountType: bankDetails.accountType
+
         };
     }
 
 
     // ========================================
-    // CHECK EXISTING ACTIVE REQUEST
+    // CHECK ACTIVE REFUND REQUEST
     // ========================================
 
     const existingRefund =
@@ -417,16 +586,32 @@ const getMyRefunds = async(
     userId
 ) => {
 
-    return Refund.find({
+    const refunds =
+        await Refund.find({
+
             user: userId
+
         })
         .populate(
+
             "order",
+
             "orderNumber totalAmount subtotal discount deliveryFee tax status"
+
         )
         .sort({
+
             createdAt: -1
+
         });
+
+
+    return refunds.map(
+        refund =>
+        formatRefundForCustomer(
+            refund
+        )
+    );
 };
 
 
@@ -439,7 +624,8 @@ const getMyRefundById = async(
     refundId
 ) => {
 
-    return Refund.findOne({
+    const refund =
+        await Refund.findOne({
 
             _id: refundId,
 
@@ -447,9 +633,23 @@ const getMyRefundById = async(
 
         })
         .populate(
+
             "order",
+
             "orderNumber totalAmount subtotal discount deliveryFee tax status"
+
         );
+
+
+    if (!refund) {
+
+        return null;
+    }
+
+
+    return formatRefundForCustomer(
+        refund
+    );
 };
 
 
@@ -473,11 +673,28 @@ const getAllRefunds = async({
     }
 
 
+    const currentPage =
+        Math.max(
+            1,
+            Number(page) || 1
+        );
+
+
+    const currentLimit =
+        Math.min(
+            100,
+            Math.max(
+                1,
+                Number(limit) || 20
+            )
+        );
+
+
     const skip =
         (
-            Number(page) - 1
+            currentPage - 1
         ) *
-        Number(limit);
+        currentLimit;
 
 
     const [
@@ -488,25 +705,56 @@ const getAllRefunds = async({
 
         Refund.find(query)
 
+        // ========================================
+        // USER DETAILS
+        // ========================================
+
         .populate(
             "user",
-            "name email"
+            "name email profileImage isEmailVerified role isActive createdAt updatedAt"
         )
+
+        // ========================================
+        // ORDER DETAILS
+        // ========================================
 
         .populate(
             "order",
-            "orderNumber totalAmount subtotal discount deliveryFee tax status"
+            "orderNumber totalAmount subtotal discount deliveryFee tax status paymentMethod deliveryAddress items createdAt updatedAt"
+        )
+
+        // ========================================
+        // PAYMENT DETAILS
+        // ========================================
+
+        .populate(
+            "payment",
+            "paymentMethod amount currency status razorpayOrderId razorpayPaymentId failureReason capturedAt paidAt"
+        )
+
+        // ========================================
+        // REVIEWED BY ADMIN
+        // ========================================
+
+        .populate(
+            "reviewedBy",
+            "name email profileImage role"
         )
 
         .sort({
+
             createdAt: -1
+
         })
 
-        .skip(skip)
+        .skip(
+            skip
+        )
 
         .limit(
-            Number(limit)
+            currentLimit
         ),
+
 
         Refund.countDocuments(
             query
@@ -521,15 +769,15 @@ const getAllRefunds = async({
 
         pagination: {
 
-            page: Number(page),
+            page: currentPage,
 
-            limit: Number(limit),
+            limit: currentLimit,
 
             total,
 
             pages: Math.ceil(
                 total /
-                Number(limit)
+                currentLimit
             )
 
         }
@@ -539,7 +787,7 @@ const getAllRefunds = async({
 
 
 // ========================================
-// ADMIN REJECT
+// ADMIN REJECT REFUND
 // ========================================
 
 const rejectRefund = async({
@@ -567,6 +815,10 @@ const rejectRefund = async({
     }
 
 
+    // ========================================
+    // VALID STATUS
+    // ========================================
+
     if (![
             "REQUESTED",
             "UNDER_REVIEW"
@@ -584,6 +836,10 @@ const rejectRefund = async({
         throw error;
     }
 
+
+    // ========================================
+    // REJECT
+    // ========================================
 
     refund.status =
         "REJECTED";
@@ -636,6 +892,10 @@ const approveRefund = async({
     }
 
 
+    // ========================================
+    // VALID STATUS
+    // ========================================
+
     if (![
             "REQUESTED",
             "UNDER_REVIEW"
@@ -655,15 +915,38 @@ const approveRefund = async({
 
 
     // ========================================
-    // MAX APPROVABLE AMOUNT
+    // PREVIOUS COMPLETED REFUNDS
+    // ========================================
+
+    const alreadyRefundedAmount =
+        await getAlreadyRefundedAmount(
+
+            refund.order._id,
+
+            refund._id
+
+        );
+
+
+    // ========================================
+    // CURRENT REMAINING AMOUNT
     // ========================================
 
     const refundCalculation =
         calculateRefundAmount(
+
             refund.order,
-            refund.payment
+
+            refund.payment,
+
+            alreadyRefundedAmount
+
         );
 
+
+    // ========================================
+    // APPROVED AMOUNT
+    // ========================================
 
     let amount =
         approvedAmount !== undefined ?
@@ -671,23 +954,24 @@ const approveRefund = async({
         refund.requestedAmount;
 
 
-    // Never allow admin to approve
-    // more than the calculated amount.
+    const maximumAmount =
+        Math.min(
+
+            refundCalculation.refundableAmount,
+
+            refund.requestedAmount
+
+        );
+
 
     if (
         amount <= 0 ||
-        amount >
-        refundCalculation.refundableAmount ||
-        amount >
-        refund.requestedAmount
+        amount > maximumAmount
     ) {
 
         const error =
             new Error(
-                `Maximum approvable refund amount is ₹${Math.min(
-                    refundCalculation.refundableAmount,
-                    refund.requestedAmount
-                )}`
+                `Maximum approvable refund amount is ₹${maximumAmount}`
             );
 
         error.statusCode = 400;
@@ -703,15 +987,13 @@ const approveRefund = async({
 
 
     // ========================================
-    // COD
+    // COD REFUND
     // ========================================
 
     if (
         refund.payment.paymentMethod ===
         "COD"
     ) {
-
-        // Bank details must exist.
 
         if (!refund.bankDetails ||
             !refund.bankDetails.accountHolderName ||
@@ -783,6 +1065,10 @@ const approveRefund = async({
     }
 
 
+    // ========================================
+    // PROCESSING
+    // ========================================
+
     refund.status =
         "PROCESSING";
 
@@ -845,12 +1131,17 @@ const approveRefund = async({
                     }
 
                 }
+
             );
 
 
         const razorpayRefund =
             refundResponse.data;
 
+
+        // ========================================
+        // REFUND COMPLETED
+        // ========================================
 
         refund.status =
             "COMPLETED";
@@ -866,12 +1157,28 @@ const approveRefund = async({
 
 
         // ========================================
+        // TOTAL COMPLETED REFUNDS
+        // ========================================
+
+        const totalRefundedAmount =
+            await getAlreadyRefundedAmount(
+                refund.order._id
+            );
+
+
+        const paymentAmount =
+            Number(
+                refund.payment.amount || 0
+            );
+
+
+        // ========================================
         // PAYMENT STATUS
         // ========================================
 
         if (
-            amount >=
-            refund.payment.amount
+            totalRefundedAmount >=
+            paymentAmount
         ) {
 
             refund.payment.status =
@@ -887,6 +1194,7 @@ const approveRefund = async({
 
             refund.order.paymentStatus =
                 "PARTIALLY_REFUNDED";
+
         }
 
 
@@ -1032,31 +1340,39 @@ const completeCODRefund = async({
     await refund.save();
 
 
-    // ========================================
-    // COD PAYMENT STATUS
-    // ========================================
-
     /*
-        COD was not paid online.
-
-        Therefore we do NOT mark
-        the Payment as REFUNDED through
+        COD payment is not processed through
         Razorpay.
 
-        We only mark the internal refund
-        as completed.
+        Therefore we do not mark COD Payment
+        as REFUNDED through Razorpay.
+
+        Refund itself is marked COMPLETED.
     */
+
 
     return refund;
 };
 
 
+// ========================================
+// EXPORTS
+// ========================================
+
 export {
+
     createRefundRequest,
+
     getMyRefunds,
+
     getMyRefundById,
+
     getAllRefunds,
+
     rejectRefund,
+
     approveRefund,
+
     completeCODRefund
+
 };
