@@ -1,0 +1,271 @@
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import morgan from "morgan";
+
+import authRoutes from "./routes/auth.routes.js";
+import categoryRoutes
+from "./routes/category.routes.js";
+
+import foodRoutes
+from "./routes/food.routes.js";
+
+import cartRoutes
+from "./routes/cart.routes.js";
+
+import addressRoutes
+from "./routes/address.routes.js";
+import orderRoutes
+from "./routes/order.routes.js";
+
+
+import paymentRoutes
+from "./routes/payment.routes.js";
+
+import webhookRoutes
+from "./routes/webhook.routes.js";
+import refundRoutes
+from "./routes/refund.routes.js";
+
+import reviewRoutes
+from "./routes/review.routes.js";
+
+import favoriteRoutes
+from "./routes/favorite.routes.js";
+
+import couponRoutes
+from "./routes/coupon.routes.js";
+
+import notificationRoutes
+from "./routes/notification.routes.js";
+import adminUserRoutes
+from "./routes/admin/user.routes.js";
+import adminFoodRoutes
+from "./routes/admin/food.routes.js";
+import adminCouponRoutes
+from "./routes/admin/coupon.routes.js";
+import adminAnalyticsRoutes
+from "./routes/admin/analytics.routes.js";
+const app = express();
+
+
+// ========================================
+// SECURITY
+// ========================================
+
+app.use(
+    helmet()
+);
+
+
+// ========================================
+// LOGGING
+// ========================================
+
+if (process.env.NODE_ENV !== "test") {
+    app.use(
+        morgan("dev")
+    );
+}
+
+
+// ========================================
+// CORS
+// ========================================
+
+app.use(
+    cors({
+        origin: process.env.FRONTEND_URL,
+        credentials: true
+    })
+);
+
+
+// ========================================
+// BODY PARSERS
+// ========================================
+
+app.use(
+    express.json({
+        limit: "10mb"
+    })
+);
+
+app.use(
+    express.urlencoded({
+        extended: true,
+        limit: "10mb"
+    })
+);
+
+
+// ========================================
+// COOKIES
+// ========================================
+
+app.use(
+    cookieParser()
+);
+
+
+// ========================================
+// HEALTH CHECK
+// ========================================
+
+app.get(
+    "/api/health",
+    (req, res) => {
+
+        return res.status(200).json({
+
+            success: true,
+
+            message: "Food Shop API is running",
+
+            timestamp: new Date().toISOString()
+
+        });
+    }
+);
+
+
+// ========================================
+// API ROUTES
+// ========================================
+
+app.use(
+    "/api/auth",
+    authRoutes
+);
+app.use(
+    "/api/categories",
+    categoryRoutes
+);
+
+app.use(
+    "/api/foods",
+    foodRoutes
+);
+
+app.use(
+    "/api/cart",
+    cartRoutes
+);
+
+app.use(
+    "/api/addresses",
+    addressRoutes
+);
+app.use(
+    "/api/orders",
+    orderRoutes
+);
+
+// ========================================
+// RAZORPAY WEBHOOK
+// MUST COME BEFORE express.json()
+// ========================================
+
+app.use(
+    "/api/webhooks",
+    webhookRoutes
+);
+
+
+
+app.use(
+    "/api/payments",
+    paymentRoutes
+);
+
+app.use(
+    "/api/refunds",
+    refundRoutes
+);
+
+app.use(
+    "/api/reviews",
+    reviewRoutes
+);
+
+app.use(
+    "/api/favorites",
+    favoriteRoutes
+);
+
+app.use(
+    "/api/coupons",
+    couponRoutes
+);
+
+app.use(
+    "/api/notifications",
+    notificationRoutes
+);
+app.use(
+    "/api/admin/users",
+    adminUserRoutes
+);
+app.use(
+    "/api/admin/foods",
+    adminFoodRoutes
+);
+app.use(
+    "/api/admin/coupons",
+    adminCouponRoutes
+);
+app.use(
+    "/api/admin/analytics",
+    adminAnalyticsRoutes
+);
+// ========================================
+// 404 HANDLER
+// ========================================
+
+app.use(
+    (req, res) => {
+
+        return res.status(404).json({
+
+            success: false,
+
+            message: `Route not found: ${req.method} ${req.originalUrl}`
+
+        });
+    }
+);
+
+
+// ========================================
+// GLOBAL ERROR HANDLER
+// ========================================
+
+app.use(
+    (error, req, res, next) => {
+
+        console.error(
+            "ERROR:",
+            error
+        );
+
+
+        const statusCode =
+            error.statusCode || 500;
+
+
+        return res.status(
+            statusCode
+        ).json({
+
+            success: false,
+
+            message: error.message ||
+                "Internal server error"
+
+        });
+    }
+);
+
+
+export default app;
