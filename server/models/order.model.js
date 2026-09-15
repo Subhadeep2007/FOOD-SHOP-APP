@@ -203,6 +203,7 @@ const orderSchema =
             ],
             required: true
         },
+
         payment: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Payment",
@@ -214,6 +215,7 @@ const orderSchema =
             default: null,
             index: true
         },
+
         paymentStatus: {
             type: String,
             enum: [
@@ -279,6 +281,24 @@ const orderSchema =
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             default: null
+        },
+
+        // ========================================
+        // DELIVERY BOY DETAILS
+        // ========================================
+
+        deliveryDetails: {
+            name: {
+                type: String,
+                trim: true,
+                default: ""
+            },
+
+            phone: {
+                type: String,
+                trim: true,
+                default: ""
+            }
         },
 
         estimatedDeliveryTime: {

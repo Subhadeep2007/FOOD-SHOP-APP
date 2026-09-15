@@ -130,7 +130,65 @@ const updateOrderStatusSchema = [
     ])
     .withMessage(
         "Invalid order status"
+    ),
+
+    body("deliveryDetails")
+    .optional()
+    .isObject()
+    .withMessage(
+        "Delivery details must be an object"
+    ),
+
+    body("deliveryDetails.name")
+    .optional()
+    .trim()
+    .isLength({
+        min: 2,
+        max: 50
+    })
+    .withMessage(
+        "Delivery boy name must be between 2 and 50 characters"
+    ),
+
+    body("deliveryDetails.phone")
+    .optional()
+    .trim()
+    .matches(
+        /^[0-9+\-\s()]{7,20}$/
     )
+    .withMessage(
+        "Invalid delivery boy phone number"
+    ),
+
+    body("deliveryDetails")
+    .custom((value, {
+        req
+    }) => {
+
+        if (
+            req.body.status === "CONFIRMED"
+        ) {
+
+            if (!value ||
+                typeof value !== "object" ||
+                !value.name ||
+                !String(
+                    value.name
+                ).trim() ||
+                !value.phone ||
+                !String(
+                    value.phone
+                ).trim()
+            ) {
+
+                throw new Error(
+                    "Delivery boy name and phone are required when confirming an order"
+                );
+            }
+        }
+
+        return true;
+    })
 
 ];
 

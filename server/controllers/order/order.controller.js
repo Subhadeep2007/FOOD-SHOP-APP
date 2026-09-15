@@ -277,7 +277,9 @@ const updateStatus = async(
 
                 req.params.id,
 
-                req.body.status
+                req.body.status,
+
+                req.body.deliveryDetails
 
             );
 

@@ -386,7 +386,9 @@ const createOrder = async({
                     discountAmount: discount
 
                 }], {
+
                     session
+
                 }
             );
 
@@ -971,7 +973,8 @@ const getAdminOrderById = async(
 
 const updateOrderStatus = async(
     orderId,
-    newStatus
+    newStatus,
+    deliveryDetails
 ) => {
 
     const order =
@@ -1054,6 +1057,28 @@ const updateOrderStatus = async(
         error.statusCode = 400;
 
         throw error;
+    }
+
+
+    // ========================================
+    // DELIVERY BOY DETAILS
+    // ========================================
+
+    if (
+        newStatus === "CONFIRMED"
+    ) {
+
+        order.deliveryDetails = {
+
+            name: String(
+                deliveryDetails.name
+            ).trim(),
+
+            phone: String(
+                deliveryDetails.phone
+            ).trim()
+
+        };
     }
 
 
