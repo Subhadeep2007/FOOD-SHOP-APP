@@ -13,6 +13,10 @@ import {
     useSelector
 } from "react-redux";
 
+import {
+    Navigate
+} from "react-router";
+
 import FoodCard from "../../components/food/FoodCard";
 
 import {
@@ -33,7 +37,8 @@ function Favorites() {
     ] = useState(true);
 
     const {
-        isAuthenticated
+        isAuthenticated,
+        user
     } = useSelector(
         (state) =>
             state.auth
@@ -140,7 +145,8 @@ function Favorites() {
     useEffect(() => {
 
         if (
-            isAuthenticated
+            isAuthenticated &&
+            (!user || user.role !== "admin")
         ) {
 
             load();
@@ -156,8 +162,13 @@ function Favorites() {
         }
 
     }, [
-        isAuthenticated
+        isAuthenticated,
+        user
     ]);
+
+    if (isAuthenticated && user && user.role === "admin") {
+        return <Navigate to="/admin" replace />;
+    }
 
     const remove =
         async (

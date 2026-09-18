@@ -6,7 +6,9 @@ import {
     getAllOrders,
     getAdminOrderById,
     updateOrderStatus,
-    cancelOrderByAdmin
+    cancelOrderByAdmin,
+    softDeleteMyOrder,
+    softDeleteOrderByAdmin
 } from "../../services/order/order.service.js";
 
 
@@ -340,6 +342,21 @@ const cancelAdmin = async(
 };
 
 
+const deleteMine = async(req, res, next) => {
+    try {
+        await softDeleteMyOrder(req.user.userId, req.params.id);
+        return res.status(200).json({ success: true, message: "Order deleted successfully" });
+    } catch (error) { next(error); }
+};
+
+const deleteAdmin = async(req, res, next) => {
+    try {
+        await softDeleteOrderByAdmin(req.params.id);
+        return res.status(200).json({ success: true, message: "Order deleted successfully" });
+    } catch (error) { next(error); }
+};
+
+
 export {
     create,
     getMine,
@@ -348,5 +365,7 @@ export {
     getAll,
     getOneAdmin,
     updateStatus,
-    cancelAdmin
+    cancelAdmin,
+    deleteMine,
+    deleteAdmin
 };

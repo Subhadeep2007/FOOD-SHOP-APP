@@ -586,7 +586,9 @@ const getMyOrders = async(
 
     return Order.find({
 
-            user: userId
+            user: userId,
+
+            deletedByCustomerAt: null
 
         })
         .sort({
@@ -611,7 +613,9 @@ const getMyOrderById = async(
 
             _id: orderId,
 
-            user: userId
+            user: userId,
+
+            deletedByCustomerAt: null
 
         })
         .populate(
@@ -673,9 +677,7 @@ const cancelMyOrder = async(
 
         const cancellableStatuses = [
 
-            "PLACED",
-
-            "CONFIRMED"
+            "PLACED"
 
         ];
 
@@ -834,7 +836,9 @@ const getAllOrders = async({
     limit = 20
 }) => {
 
-    const query = {};
+    const query = {
+        deletedByAdminAt: null
+    };
 
 
     if (status) {
@@ -946,9 +950,10 @@ const getAdminOrderById = async(
     orderId
 ) => {
 
-    return Order.findById(
-        orderId
-    )
+    return Order.findOne({
+        _id: orderId,
+        deletedByAdminAt: null
+    })
 
     .populate(
         "user",
@@ -1322,6 +1327,45 @@ const cancelOrderByAdmin = async(
 
 
 // ========================================
+// SOFT DELETE TERMINAL ORDERS
+// ========================================
+
+const softDeleteMyOrder = async(userId, orderId) => {
+    const order = await Order.findOne({ _id: orderId, user: userId, deletedByCustomerAt: null });
+    if (!order) {
+        const error = new Error("Order not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    if (!["DELIVERED", "CANCELLED"].includes(order.status)) {
+        const error = new Error("Only delivered or cancelled orders can be deleted");
+        error.statusCode = 400;
+        throw error;
+    }
+    order.deletedByCustomerAt = new Date();
+    await order.save();
+    return order;
+};
+
+const softDeleteOrderByAdmin = async(orderId) => {
+    const order = await Order.findOne({ _id: orderId, deletedByAdminAt: null });
+    if (!order) {
+        const error = new Error("Order not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    if (!["DELIVERED", "CANCELLED"].includes(order.status)) {
+        const error = new Error("Only delivered or cancelled orders can be deleted");
+        error.statusCode = 400;
+        throw error;
+    }
+    order.deletedByAdminAt = new Date();
+    await order.save();
+    return order;
+};
+
+
+// ========================================
 // EXPORTS
 // ========================================
 
@@ -1341,6 +1385,10 @@ export {
 
     updateOrderStatus,
 
-    cancelOrderByAdmin
+    cancelOrderByAdmin,
+
+    softDeleteMyOrder,
+
+    softDeleteOrderByAdmin
 
 };

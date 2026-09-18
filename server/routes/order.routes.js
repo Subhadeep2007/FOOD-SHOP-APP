@@ -16,7 +16,9 @@ import {
 
     updateStatus,
 
-    cancelAdmin
+    cancelAdmin,
+    deleteMine,
+    deleteAdmin
 
 } from "../controllers/order/order.controller.js";
 
@@ -39,7 +41,8 @@ import {
 
     updateOrderStatusSchema,
 
-    adminCancelOrderSchema
+    adminCancelOrderSchema,
+    orderIdSchema
 
 } from "../validators/order.validator.js";
 
@@ -98,6 +101,8 @@ router.patch(
     cancelMine
 
 );
+
+router.delete("/my-orders/:id", authMiddleware, validate(orderIdSchema), deleteMine);
 
 
 // ========================================
@@ -160,6 +165,8 @@ router.patch(
     cancelAdmin
 
 );
+
+router.delete("/admin/:id", authMiddleware, adminMiddleware, validate(orderIdSchema), deleteAdmin);
 
 
 export default router;

@@ -1,7 +1,8 @@
 import {
     getMyNotifications,
     markNotificationAsRead,
-    markAllNotificationsAsRead
+    markAllNotificationsAsRead,
+    deleteMyNotification
 } from "../../services/notification/notification.service.js";
 
 
@@ -113,8 +114,17 @@ const readAll = async(
 };
 
 
+const remove = async(req, res, next) => {
+    try {
+        await deleteMyNotification(req.user.userId, req.params.id);
+        return res.status(200).json({ success: true, message: "Notification deleted successfully" });
+    } catch (error) { next(error); }
+};
+
+
 export {
     getMine,
     read,
-    readAll
+    readAll,
+    remove
 };

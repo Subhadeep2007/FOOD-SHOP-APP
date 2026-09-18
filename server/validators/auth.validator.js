@@ -282,6 +282,14 @@ const changePasswordSchema = [
     )
 ];
 
+const shopLocationSchema = [
+    body("name").trim().notEmpty().withMessage("Shop name is required").isLength({ max: 100 }),
+    body("address").trim().notEmpty().withMessage("Shop address is required").isLength({ max: 300 }),
+    body("phone").trim().matches(/^[0-9+()\-\s]{7,20}$/).withMessage("Enter a valid shop contact number"),
+    body("latitude").isFloat({ min: -90, max: 90 }).withMessage("Enter a valid latitude"),
+    body("longitude").isFloat({ min: -180, max: 180 }).withMessage("Enter a valid longitude")
+];
+
 
 export {
     registerSchema,
@@ -292,5 +300,6 @@ export {
     adminLoginSchema,
     forgotPasswordSchema,
     resetPasswordSchema,
-    changePasswordSchema
+    changePasswordSchema,
+    shopLocationSchema
 };

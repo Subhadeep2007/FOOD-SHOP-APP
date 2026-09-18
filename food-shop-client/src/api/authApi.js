@@ -187,6 +187,16 @@ const updateProfileImage = async(
     return response.data;
 };
 
+const updateShopLocation = async(data) => {
+    const response = await api.patch("/auth/shop-location", data);
+    return response.data;
+};
+
+const getShopLocation = async() => {
+    const response = await api.get("/auth/shop-location");
+    return response.data;
+};
+
 
 export {
     registerUser,
@@ -201,5 +211,7 @@ export {
     forgotPassword,
     resetPassword,
     changePassword,
-    updateProfileImage
+    updateProfileImage,
+    updateShopLocation,
+    getShopLocation
 };

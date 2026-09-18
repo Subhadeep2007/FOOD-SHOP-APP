@@ -76,14 +76,17 @@ function Navbar() {
             )
             : 0;
 
+    const isAdmin =
+        Boolean(user && user.role === "admin");
+
     useEffect(() => {
 
-        if (isAuthenticated) {
+        if (isAuthenticated && !isAdmin) {
 
             dispatch(fetchCart());
         }
 
-    }, [dispatch, isAuthenticated]);
+    }, [dispatch, isAuthenticated, isAdmin]);
 
     const profileImage =
         user &&
@@ -148,20 +151,44 @@ function Navbar() {
                     </NavLink>
 
                     <NavLink
-                        to="/favorites"
+                        to="/categories"
                         className="text-sm font-semibold text-slate-600 hover:text-slate-900"
                     >
-                        Favorites
+                        Categories
                     </NavLink>
 
-                    {isAuthenticated && user && user.role !== "admin" ? (
-
+                    {!isAdmin ? (
                         <NavLink
-                            to="/orders"
+                            to="/favorites"
                             className="text-sm font-semibold text-slate-600 hover:text-slate-900"
                         >
-                            My Orders
+                            Favorites
                         </NavLink>
+                    ) : (
+                        <NavLink
+                            to="/admin"
+                            className="text-sm font-semibold text-slate-600 hover:text-slate-900"
+                        >
+                            Admin Dashboard
+                        </NavLink>
+                    )}
+
+                    {isAuthenticated && user && user.role !== "admin" ? (
+                        <>
+                            <NavLink
+                                to="/orders"
+                                className="text-sm font-semibold text-slate-600 hover:text-slate-900"
+                            >
+                                My Orders
+                            </NavLink>
+
+                            <NavLink
+                                to="/refunds"
+                                className="text-sm font-semibold text-slate-600 hover:text-slate-900"
+                            >
+                                Refunds
+                            </NavLink>
+                        </>
 
                     ) : null}
 
@@ -206,6 +233,7 @@ function Navbar() {
 
                     {/* FAVORITES */}
 
+                    {!isAdmin ? (
                     <Link
                         to="/favorites"
                         className="rounded-xl p-2 text-slate-600 hover:bg-slate-100"
@@ -215,6 +243,7 @@ function Navbar() {
                             size={20}
                         />
                     </Link>
+                    ) : null}
 
 
                     {/* CART */}
@@ -232,6 +261,7 @@ function Navbar() {
                         </Link>
                     )}
 
+                    {!isAdmin ? (
                     <Link
                         to="/cart"
                         className="relative rounded-xl p-2 text-slate-600 hover:bg-slate-100"
@@ -248,6 +278,7 @@ function Navbar() {
                             </span>
                         )}
                     </Link>
+                    ) : null}
 
 
                     {/* ACCOUNT / PROFILE */}
@@ -255,7 +286,7 @@ function Navbar() {
                     <Link
                         to={
                             isAuthenticated
-                                ? "/account"
+                                ? (isAdmin ? "/admin/account" : "/account")
                                 : "/login"
                         }
                         className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100"
@@ -366,48 +397,23 @@ function Navbar() {
 
                         {/* HOME */}
 
-                        <Link
-                            onClick={() =>
-                                setOpen(
-                                    false
-                                )
-                            }
-                            to="/"
-                            className="rounded-xl px-3 py-3 font-semibold hover:bg-slate-50"
-                        >
-                            Home
-                        </Link>
+                        {isAdmin ? (
+                            <Link
+                                onClick={() => setOpen(false)}
+                                to="/admin"
+                                className="rounded-xl px-3 py-3 font-semibold hover:bg-slate-50"
+                            >
+                                Admin Dashboard
+                            </Link>
+                        ) : (
+                            <>
+                                <Link onClick={() => setOpen(false)} to="/" className="rounded-xl px-3 py-3 font-semibold hover:bg-slate-50">Home</Link>
+                                <Link onClick={() => setOpen(false)} to="/menu" className="rounded-xl px-3 py-3 font-semibold hover:bg-slate-50">Menu</Link>
+                                <Link onClick={() => setOpen(false)} to="/favorites" className="rounded-xl px-3 py-3 font-semibold hover:bg-slate-50">Favorites</Link>
+                            </>
+                        )}
 
-
-                        {/* MENU */}
-
-                        <Link
-                            onClick={() =>
-                                setOpen(
-                                    false
-                                )
-                            }
-                            to="/menu"
-                            className="rounded-xl px-3 py-3 font-semibold hover:bg-slate-50"
-                        >
-                            Menu
-                        </Link>
-
-
-                        {/* FAVORITES */}
-
-                        <Link
-                            onClick={() =>
-                                setOpen(
-                                    false
-                                )
-                            }
-                            to="/favorites"
-                            className="rounded-xl px-3 py-3 font-semibold hover:bg-slate-50"
-                        >
-                            Favorites
-                        </Link>
-
+                        {!isAdmin ? (
                         <Link
                             onClick={() =>
                                 setOpen(
@@ -419,6 +425,27 @@ function Navbar() {
                         >
                             Cart
                         </Link>
+                        ) : null}
+
+                        {isAuthenticated && user && user.role !== "admin" ? (
+                            <>
+                                <Link
+                                    onClick={() => setOpen(false)}
+                                    to="/orders"
+                                    className="rounded-xl px-3 py-3 font-semibold hover:bg-slate-50"
+                                >
+                                    My Orders
+                                </Link>
+
+                                <Link
+                                    onClick={() => setOpen(false)}
+                                    to="/refunds"
+                                    className="rounded-xl px-3 py-3 font-semibold hover:bg-slate-50"
+                                >
+                                    Refunds
+                                </Link>
+                            </>
+                        ) : null}
 
 
                         {/* ACCOUNT */}
@@ -431,7 +458,7 @@ function Navbar() {
                             }
                             to={
                                 isAuthenticated
-                                    ? "/account"
+                                    ? (isAdmin ? "/admin/account" : "/account")
                                     : "/login"
                             }
                             className="flex items-center gap-3 rounded-xl px-3 py-3 font-semibold hover:bg-slate-50"

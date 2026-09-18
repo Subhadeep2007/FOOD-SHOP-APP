@@ -13,7 +13,9 @@ import {
     forgotPasswordController,
     resetPasswordController,
     changePasswordController,
-    updateProfileImageController
+    updateProfileImageController,
+    updateShopLocationController,
+    getShopLocationController
 } from "../controllers/auth/auth.controller.js";
 
 import {
@@ -25,7 +27,8 @@ import {
     adminLoginSchema,
     forgotPasswordSchema,
     resetPasswordSchema,
-    changePasswordSchema
+    changePasswordSchema,
+    shopLocationSchema
 } from "../validators/auth.validator.js";
 
 import validate
@@ -33,6 +36,9 @@ from "../middleware/validate.middleware.js";
 
 import authMiddleware
 from "../middleware/auth.middleware.js";
+
+import adminMiddleware
+from "../middleware/admin.middleware.js";
 
 import authRateLimiter
 from "../middleware/rateLimit.middleware.js";
@@ -43,6 +49,11 @@ from "../middleware/upload.middleware.js";
 
 const router =
     express.Router();
+
+router.get(
+    "/shop-location",
+    getShopLocationController
+);
 
 
 // ========================================
@@ -191,6 +202,14 @@ router.patch(
         "profileImage"
     ),
     updateProfileImageController
+);
+
+router.patch(
+    "/shop-location",
+    authMiddleware,
+    adminMiddleware,
+    validate(shopLocationSchema),
+    updateShopLocationController
 );
 
 

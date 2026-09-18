@@ -135,18 +135,6 @@ function ReviewSection({
             event.preventDefault();
 
             if (
-                !orderId &&
-                !editingId
-            ) {
-
-                toast.error(
-                    "A delivered order ID is required."
-                );
-
-                return;
-            }
-
-            if (
                 comment.length >
                 1000
             ) {
@@ -178,12 +166,17 @@ function ReviewSection({
 
                 } else {
 
-                    await createReview({
+                    const reviewData = {
                         foodId,
-                        orderId,
                         rating,
                         comment
-                    });
+                    };
+
+                    if (orderId) {
+                        reviewData.orderId = orderId;
+                    }
+
+                    await createReview(reviewData);
 
                     toast.success(
                         "Review added successfully."
@@ -543,7 +536,7 @@ function ReviewSection({
             )}
 
             {!editingId &&
-                orderId && (
+                currentUserId && (
 
                     <form
                         onSubmit={
@@ -629,6 +622,12 @@ function ReviewSection({
 
                     </form>
                 )}
+
+            {!currentUserId ? (
+                <p className="mt-6 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                    Login after delivery to write a review.
+                </p>
+            ) : null}
 
         </section>
     );

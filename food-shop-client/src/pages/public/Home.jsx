@@ -5,7 +5,51 @@ import {
     Truck
 } from "lucide-react";
 
+import { Navigate } from "react-router";
+import { useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+import { getShopLocation } from "../../api/authApi";
+
 function Home() {
+
+    const { user, isAuthenticated } = useSelector((state) => state.auth);
+    const [shopLocation, setShopLocation] = useState(null);
+    const [deliveryMessage, setDeliveryMessage] = useState("");
+    const [checkingDelivery, setCheckingDelivery] = useState(false);
+
+    useEffect(() => {
+        getShopLocation()
+            .then((response) => {
+                const data = response && response.data ? response.data : response;
+                setShopLocation(data && data.shopLocation ? data.shopLocation : null);
+            })
+            .catch(() => setShopLocation(null));
+    }, []);
+
+    if (isAuthenticated && user && user.role === "admin") {
+        return <Navigate to="/admin" replace />;
+    }
+
+    const checkDelivery = () => {
+        if (!shopLocation || !navigator.geolocation) {
+            setDeliveryMessage("Location is not available in this browser.");
+            return;
+        }
+        setCheckingDelivery(true);
+        navigator.geolocation.getCurrentPosition((position) => {
+            const toRadians = (value) => value * Math.PI / 180;
+            const earthRadiusKm = 6371;
+            const latitudeDifference = toRadians(Number(shopLocation.latitude) - position.coords.latitude);
+            const longitudeDifference = toRadians(Number(shopLocation.longitude) - position.coords.longitude);
+            const a = Math.sin(latitudeDifference / 2) ** 2 + Math.cos(toRadians(position.coords.latitude)) * Math.cos(toRadians(Number(shopLocation.latitude))) * Math.sin(longitudeDifference / 2) ** 2;
+            const distance = earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            setDeliveryMessage(distance <= 10 ? `Delivery is available at your location (${distance.toFixed(1)} km from the shop).` : `Sorry, your location is ${distance.toFixed(1)} km away. Delivery is available within 10 km.`);
+            setCheckingDelivery(false);
+        }, () => {
+            setDeliveryMessage("Allow location permission to check delivery availability.");
+            setCheckingDelivery(false);
+        }, { enableHighAccuracy: true, timeout: 10000 });
+    };
 
     return (
 
@@ -150,6 +194,28 @@ function Home() {
                 </div>
 
             </section>
+
+            {shopLocation ? (
+                <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+                    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:grid lg:grid-cols-2">
+                        <div className="p-7 sm:p-10">
+                            <p className="text-sm font-bold uppercase tracking-widest text-orange-500">Visit FoodShop</p>
+                            {shopLocation.image ? <img src={shopLocation.image} alt={shopLocation.name} className="mt-4 h-28 w-28 rounded-2xl object-cover" /> : null}
+                            <h2 className="mt-3 text-3xl font-black text-slate-950">{shopLocation.name}</h2>
+                            <p className="mt-4 leading-7 text-slate-600">{shopLocation.address}</p>
+                            <div className="mt-4 space-y-1 text-sm text-slate-600">
+                                <p><span className="font-bold text-slate-900">Owner:</span> {shopLocation.ownerName}</p>
+                                <p><span className="font-bold text-slate-900">Email:</span> <a className="text-orange-600" href={`mailto:${shopLocation.ownerEmail}`}>{shopLocation.ownerEmail}</a></p>
+                                <p><span className="font-bold text-slate-900">Contact:</span> <a className="text-orange-600" href={`tel:${shopLocation.phone}`}>{shopLocation.phone}</a></p>
+                            </div>
+                            <a href={`https://www.google.com/maps/dir/?api=1&destination=${shopLocation.latitude},${shopLocation.longitude}`} target="_blank" rel="noreferrer" className="mt-6 inline-flex rounded-xl bg-slate-900 px-5 py-3 font-bold text-white">Get directions</a>
+                            <button type="button" onClick={checkDelivery} disabled={checkingDelivery} className="mt-3 block rounded-xl bg-orange-500 px-5 py-3 font-bold text-white disabled:opacity-50">{checkingDelivery ? "Checking delivery..." : "Check 10 km delivery"}</button>
+                            {deliveryMessage ? <p className={`mt-3 rounded-xl p-3 text-sm font-bold ${deliveryMessage.startsWith("Delivery is available") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>{deliveryMessage}</p> : null}
+                        </div>
+                        <iframe title="FoodShop location" className="h-80 w-full border-0 lg:h-full" loading="lazy" src={`https://www.openstreetmap.org/export/embed.html?layer=mapnik&marker=${shopLocation.latitude}%2C${shopLocation.longitude}`} />
+                    </div>
+                </section>
+            ) : null}
 
 
             {/* ========================================

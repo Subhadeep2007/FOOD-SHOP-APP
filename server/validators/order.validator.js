@@ -217,11 +217,22 @@ const adminCancelOrderSchema = [
 
 ];
 
+const orderIdSchema = [
+
+    param("id")
+    .isMongoId()
+    .withMessage(
+        "Valid order ID is required"
+    )
+
+];
+
 
 export {
     createOrderSchema,
     cancelOrderSchema,
     adminOrderQuerySchema,
     updateOrderStatusSchema,
-    adminCancelOrderSchema
+    adminCancelOrderSchema,
+    orderIdSchema
 };

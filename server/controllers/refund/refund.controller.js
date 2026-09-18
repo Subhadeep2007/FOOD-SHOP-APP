@@ -5,7 +5,9 @@ import {
     getAllRefunds,
     rejectRefund,
     approveRefund,
-    completeCODRefund
+    completeCODRefund,
+    softDeleteMyRefund,
+    softDeleteRefundByAdmin
 } from "../../services/refund/refund.service.js";
 
 
@@ -298,6 +300,21 @@ const completeCOD = async(
 };
 
 
+const deleteMine = async(req, res, next) => {
+    try {
+        await softDeleteMyRefund(req.user.userId, req.params.id);
+        return res.status(200).json({ success: true, message: "Refund request deleted successfully" });
+    } catch (error) { next(error); }
+};
+
+const deleteAdmin = async(req, res, next) => {
+    try {
+        await softDeleteRefundByAdmin(req.params.id);
+        return res.status(200).json({ success: true, message: "Refund request deleted successfully" });
+    } catch (error) { next(error); }
+};
+
+
 export {
     create,
     getMine,
@@ -305,5 +322,7 @@ export {
     getAll,
     reject,
     approve,
-    completeCOD
+    completeCOD,
+    deleteMine,
+    deleteAdmin
 };

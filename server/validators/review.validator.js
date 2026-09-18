@@ -17,6 +17,7 @@ const createReviewSchema = [
     ),
 
     body("orderId")
+    .optional()
     .isMongoId()
     .withMessage(
         "Valid order ID is required"

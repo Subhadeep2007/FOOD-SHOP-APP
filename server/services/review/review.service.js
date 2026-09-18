@@ -20,23 +20,42 @@ const createReview = async({
     comment
 }) => {
 
-    const order =
-        await Order.findOne({
+    let order;
 
+    if (orderId) {
+        order = await Order.findOne({
             _id: orderId,
-
             user: userId,
-
             status: "DELIVERED"
-
         });
+    } else {
+        const deliveredOrders = await Order.find({
+            user: userId,
+            status: "DELIVERED",
+            "items.food": foodId
+        }).sort({ createdAt: -1 });
+
+        const reviewedOrders = await Review.find({
+            user: userId,
+            food: foodId,
+            order: { $in: deliveredOrders.map((item) => item._id) }
+        }).distinct("order");
+
+        order = deliveredOrders.find(
+            (item) => !reviewedOrders.some(
+                (reviewedOrderId) => String(reviewedOrderId) === String(item._id)
+            )
+        );
+    }
 
 
     if (!order) {
 
         const error =
             new Error(
-                "You can review only delivered orders"
+                orderId
+                    ? "You can review only this delivered order"
+                    : "You have no unreviewed delivered order for this food"
             );
 
         error.statusCode = 400;
@@ -73,7 +92,7 @@ const createReview = async({
 
             food: foodId,
 
-            order: orderId
+            order: order._id
 
         });
 
@@ -98,7 +117,7 @@ const createReview = async({
 
             food: foodId,
 
-            order: orderId,
+            order: order._id,
 
             rating: Number(rating),
 

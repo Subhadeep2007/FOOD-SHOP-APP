@@ -22,6 +22,7 @@ const getCurrentUserId = () => {
     }
 
     return (
+        user.userId ||
         user._id ||
         user.id ||
         ""

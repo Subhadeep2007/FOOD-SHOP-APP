@@ -185,6 +185,13 @@ const updateUserStatus = async(
         isActive;
 
 
+    if (!isActive) {
+
+        user.refreshToken =
+            null;
+    }
+
+
     await user.save();
 
 

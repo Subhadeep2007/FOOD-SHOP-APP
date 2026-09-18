@@ -14,7 +14,9 @@ import {
 
     approve,
 
-    completeCOD
+    completeCOD,
+    deleteMine,
+    deleteAdmin
 
 } from "../controllers/refund/refund.controller.js";
 
@@ -100,6 +102,8 @@ router.get(
 
 );
 
+router.delete("/my/:id", authMiddleware, validate(refundIdSchema), deleteMine);
+
 
 // ========================================
 // ADMIN - GET ALL REFUNDS
@@ -183,6 +187,8 @@ router.patch(
     completeCOD
 
 );
+
+router.delete("/admin/:id", authMiddleware, adminMiddleware, validate(refundIdSchema), deleteAdmin);
 
 
 export default router;

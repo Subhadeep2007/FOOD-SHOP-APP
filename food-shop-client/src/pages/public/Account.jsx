@@ -17,7 +17,8 @@ import toast from "react-hot-toast";
 import {
     logoutUser,
     logoutAllSessions,
-    updateProfileImage
+    updateProfileImage,
+    updateShopLocation
 } from "../../api/authApi";
 
 import {
@@ -59,6 +60,9 @@ function Account() {
         uploadingImage,
         setUploadingImage
     ] = useState(false);
+
+    const [shopLocation, setShopLocation] = useState({ name: "", address: "", phone: "", latitude: "", longitude: "" });
+    const [savingLocation, setSavingLocation] = useState(false);
 
     const handleLogout =
         async () => {
@@ -213,6 +217,41 @@ function Account() {
             ? "/admin/login"
             : "/login";
 
+    const isAdmin =
+        Boolean(user && user.role === "admin");
+
+    const saveShopLocation = async(event) => {
+        event.preventDefault();
+        setSavingLocation(true);
+        try {
+            await updateShopLocation(shopLocation);
+            toast.success("Shop location saved. It is now visible on the home page.");
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Unable to save shop location.");
+        } finally {
+            setSavingLocation(false);
+        }
+    };
+
+    const useCurrentShopLocation = () => {
+        if (!navigator.geolocation) {
+            toast.error("Location is not supported by this browser.");
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setShopLocation({
+                    ...shopLocation,
+                    latitude: String(position.coords.latitude),
+                    longitude: String(position.coords.longitude)
+                });
+                toast.success("Current shop location captured.");
+            },
+            () => toast.error("Allow location permission to capture the shop location."),
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    };
+
     return (
         <main className="min-h-screen bg-slate-50 px-4 py-10">
 
@@ -239,7 +278,7 @@ function Account() {
                         <div>
 
                             <p className="text-sm font-bold uppercase tracking-widest text-slate-400">
-                                My Account
+                                {isAdmin ? "Admin Account" : "My Account"}
                             </p>
 
                             <h1 className="mt-1 text-3xl font-black text-slate-900">
@@ -301,6 +340,22 @@ function Account() {
 
                     </div>
 
+                    {isAdmin ? (
+                        <form onSubmit={saveShopLocation} className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4">
+                            <h2 className="font-black text-slate-900">Shop location</h2>
+                            <p className="mt-1 text-sm text-slate-600">This exact location is shown to customers on the home page.</p>
+                            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                <input required value={shopLocation.name} onChange={(event) => setShopLocation({ ...shopLocation, name: event.target.value })} placeholder="Shop name" className="rounded-xl border bg-white p-3" />
+                                <input required value={shopLocation.address} onChange={(event) => setShopLocation({ ...shopLocation, address: event.target.value })} placeholder="Full shop address" className="rounded-xl border bg-white p-3" />
+                                <input required value={shopLocation.phone} onChange={(event) => setShopLocation({ ...shopLocation, phone: event.target.value })} placeholder="Shop contact number" className="rounded-xl border bg-white p-3" />
+                                <input required type="number" step="any" value={shopLocation.latitude} onChange={(event) => setShopLocation({ ...shopLocation, latitude: event.target.value })} placeholder="Latitude" className="rounded-xl border bg-white p-3" />
+                                <input required type="number" step="any" value={shopLocation.longitude} onChange={(event) => setShopLocation({ ...shopLocation, longitude: event.target.value })} placeholder="Longitude" className="rounded-xl border bg-white p-3" />
+                            </div>
+                            <button type="button" onClick={useCurrentShopLocation} className="mt-3 rounded-xl border border-slate-300 bg-white px-4 py-3 font-bold">Use current shop location</button>
+                            <button disabled={savingLocation} className="mt-4 rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:opacity-50">{savingLocation ? "Saving..." : "Save shop location"}</button>
+                        </form>
+                    ) : null}
+
                     <div className="mt-8 grid gap-4 sm:grid-cols-2">
 
                         <div className="rounded-2xl bg-slate-50 p-4">
@@ -341,26 +396,21 @@ function Account() {
 
                     <div className="mt-8 grid gap-3 sm:grid-cols-2">
 
-                        <Link
-                            to="/orders"
-                            className="rounded-xl border border-slate-300 px-4 py-3 text-center font-bold"
-                        >
-                            My Orders
-                        </Link>
-
-                        <Link
-                            to="/addresses"
-                            className="rounded-xl border border-slate-300 px-4 py-3 text-center font-bold"
-                        >
-                            My Addresses
-                        </Link>
-
-                        <Link
-                            to="/cart"
-                            className="rounded-xl border border-slate-300 px-4 py-3 text-center font-bold"
-                        >
-                            My Cart
-                        </Link>
+                        {isAdmin ? (
+                            <Link
+                                to="/admin"
+                                className="rounded-xl border border-slate-300 px-4 py-3 text-center font-bold"
+                            >
+                                Admin Dashboard
+                            </Link>
+                        ) : (
+                            <>
+                                <Link to="/orders" className="rounded-xl border border-slate-300 px-4 py-3 text-center font-bold">My Orders</Link>
+                                <Link to="/refunds" className="rounded-xl border border-slate-300 px-4 py-3 text-center font-bold">My Refunds</Link>
+                                <Link to="/addresses" className="rounded-xl border border-slate-300 px-4 py-3 text-center font-bold">My Addresses</Link>
+                                <Link to="/cart" className="rounded-xl border border-slate-300 px-4 py-3 text-center font-bold">My Cart</Link>
+                            </>
+                        )}
 
                         <Link
                             to="/change-password"
@@ -369,12 +419,9 @@ function Account() {
                             Change Password
                         </Link>
 
-                        <Link
-                            to="/favorites"
-                            className="rounded-xl border border-slate-300 px-4 py-3 text-center font-bold"
-                        >
-                            My Favorites
-                        </Link>
+                        {!isAdmin ? (
+                            <Link to="/favorites" className="rounded-xl border border-slate-300 px-4 py-3 text-center font-bold">My Favorites</Link>
+                        ) : null}
 
                     </div>
 

@@ -213,6 +213,17 @@ const refundSchema = new mongoose.Schema({
     completedAt: {
         type: Date,
         default: null
+    },
+
+    // Soft-delete markers are deliberately separate for customer and admin views.
+    deletedByCustomerAt: {
+        type: Date,
+        default: null
+    },
+
+    deletedByAdminAt: {
+        type: Date,
+        default: null
     }
 
 }, {

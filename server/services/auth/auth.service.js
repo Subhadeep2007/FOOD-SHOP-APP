@@ -1295,6 +1295,35 @@ const updateProfileImage = async(
 };
 
 
+const updateShopLocation = async(userId, location) => {
+    const user = await User.findOne({ _id: userId, role: "admin" });
+    if (!user) throw createError("Admin account not found", 404);
+    user.shopLocation = {
+        name: location.name,
+        address: location.address,
+        phone: location.phone,
+        latitude: Number(location.latitude),
+        longitude: Number(location.longitude)
+    };
+    await user.save();
+    return user.shopLocation;
+};
+
+const getShopLocation = async() => {
+    const admin = await User.findOne({
+        role: "admin",
+        "shopLocation.latitude": { $type: "number" },
+        "shopLocation.longitude": { $type: "number" }
+    }).select("name email profileImage shopLocation").sort({ updatedAt: -1 });
+    if (!admin) return null;
+    return {
+        ...admin.shopLocation.toObject(),
+        ownerName: admin.name,
+        ownerEmail: admin.email,
+        image: admin.profileImage
+    };
+};
+
 export {
     registerUser,
     registerAdmin,
@@ -1308,5 +1337,7 @@ export {
     forgotPassword,
     resetPassword,
     changePassword,
-    updateProfileImage
+    updateProfileImage,
+    updateShopLocation,
+    getShopLocation
 };

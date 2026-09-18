@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
+import User from "../models/user.model.js";
 
-const authMiddleware = (
+const authMiddleware = async(
     req,
     res,
     next
@@ -52,6 +53,23 @@ const authMiddleware = (
                 token,
                 process.env.JWT_SECRET
             );
+
+
+        const user = await User.findById(
+            decoded.userId
+        ).select("isActive");
+
+
+        if (!user || !user.isActive) {
+
+            return res.status(403).json({
+
+                success: false,
+
+                message: "Your account has been suspended. Please contact support."
+
+            });
+        }
 
 
         req.user =

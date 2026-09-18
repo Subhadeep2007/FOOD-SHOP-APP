@@ -175,9 +175,24 @@ const markAllNotificationsAsRead = async(
 };
 
 
+const deleteMyNotification = async(userId, notificationId) => {
+    const notification = await Notification.findOneAndDelete({
+        _id: notificationId,
+        user: userId
+    });
+    if (!notification) {
+        const error = new Error("Notification not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    return true;
+};
+
+
 export {
     createNotification,
     getMyNotifications,
     markNotificationAsRead,
-    markAllNotificationsAsRead
+    markAllNotificationsAsRead,
+    deleteMyNotification
 };

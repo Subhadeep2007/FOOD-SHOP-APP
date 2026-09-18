@@ -31,6 +31,9 @@ import Home
 import Menu
     from "./pages/public/Menu";
 
+import Categories
+    from "./pages/public/Categories";
+
 import FoodDetails
     from "./pages/public/FoodDetails";
 
@@ -178,6 +181,13 @@ function App() {
                     />
 
                     <Route
+                        path="/categories"
+                        element={
+                            <Categories />
+                        }
+                    />
+
+                    <Route
                         path="/foods/:foodId"
                         element={
                             <FoodDetails />
@@ -249,10 +259,6 @@ function App() {
                         }
                     />
 
-                    <Route path="/refunds" element={<Refunds />} />
-
-                    <Route path="/notifications" element={<Notifications />} />
-
                     <Route
                         path="/register"
                         element={
@@ -295,6 +301,10 @@ function App() {
                             <Account />
                         }
                     />
+
+                    <Route path="/refunds" element={<Refunds />} />
+
+                    <Route path="/notifications" element={<Notifications />} />
 
                     <Route
                         path="/change-password"

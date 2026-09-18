@@ -279,7 +279,9 @@ const createRefundRequest = async({
 
             _id: orderId,
 
-            user: userId
+            user: userId,
+
+            deletedByCustomerAt: null
 
         });
 
@@ -328,7 +330,9 @@ const createRefundRequest = async({
 
             order: order._id,
 
-            user: userId
+            user: userId,
+
+            deletedByCustomerAt: null
 
         });
 
@@ -596,7 +600,7 @@ const getMyRefunds = async(
 
             "order",
 
-            "orderNumber totalAmount subtotal discount deliveryFee tax status"
+            "orderNumber totalAmount subtotal discount deliveryFee tax status paymentMethod paymentStatus items"
 
         )
         .sort({
@@ -636,7 +640,7 @@ const getMyRefundById = async(
 
             "order",
 
-            "orderNumber totalAmount subtotal discount deliveryFee tax status"
+            "orderNumber totalAmount subtotal discount deliveryFee tax status paymentMethod paymentStatus items"
 
         );
 
@@ -663,7 +667,9 @@ const getAllRefunds = async({
     limit = 20
 }) => {
 
-    const query = {};
+    const query = {
+        deletedByAdminAt: null
+    };
 
 
     if (status) {
@@ -711,7 +717,7 @@ const getAllRefunds = async({
 
         .populate(
             "user",
-            "name email profileImage isEmailVerified role isActive createdAt updatedAt"
+            "name email profileImage shopLocation isEmailVerified role isActive createdAt updatedAt"
         )
 
         // ========================================
@@ -763,9 +769,20 @@ const getAllRefunds = async({
     ]);
 
 
+    const refundsWithOrderBankDetails = refunds.map(refund => {
+        const refundData = refund.toObject();
+        if (refundData.refundType === "COD" && refundData.order) {
+            refundData.order.refundBankDetails = refundData.bankDetails;
+        }
+        if (refundData.order) {
+            refundData.order.refundPaymentDetails = refundData.payment;
+        }
+        return refundData;
+    });
+
     return {
 
-        refunds,
+        refunds: refundsWithOrderBankDetails,
 
         pagination: {
 
@@ -1356,6 +1373,45 @@ const completeCODRefund = async({
 
 
 // ========================================
+// SOFT DELETE TERMINAL REFUNDS
+// ========================================
+
+const assertRefundCanBeDeleted = (refund, allowedStatuses) => {
+    if (!allowedStatuses.includes(refund.status)) {
+        const error = new Error("This refund request cannot be deleted at its current status");
+        error.statusCode = 400;
+        throw error;
+    }
+};
+
+const softDeleteMyRefund = async(userId, refundId) => {
+    const refund = await Refund.findOne({ _id: refundId, user: userId, deletedByCustomerAt: null });
+    if (!refund) {
+        const error = new Error("Refund request not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    assertRefundCanBeDeleted(refund, ["COMPLETED"]);
+    refund.deletedByCustomerAt = new Date();
+    await refund.save();
+    return refund;
+};
+
+const softDeleteRefundByAdmin = async(refundId) => {
+    const refund = await Refund.findOne({ _id: refundId, deletedByAdminAt: null });
+    if (!refund) {
+        const error = new Error("Refund request not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    assertRefundCanBeDeleted(refund, ["COMPLETED", "REJECTED"]);
+    refund.deletedByAdminAt = new Date();
+    await refund.save();
+    return refund;
+};
+
+
+// ========================================
 // EXPORTS
 // ========================================
 
@@ -1373,6 +1429,10 @@ export {
 
     approveRefund,
 
-    completeCODRefund
+    completeCODRefund,
+
+    softDeleteMyRefund,
+
+    softDeleteRefundByAdmin
 
 };

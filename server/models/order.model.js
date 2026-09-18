@@ -273,6 +273,18 @@ const orderSchema =
             default: null
         },
 
+        // Visibility is tracked independently, so a customer hiding an order
+        // does not remove it from the admin's operational history (and vice versa).
+        deletedByCustomerAt: {
+            type: Date,
+            default: null
+        },
+
+        deletedByAdminAt: {
+            type: Date,
+            default: null
+        },
+
         // ========================================
         // DELIVERY
         // ========================================

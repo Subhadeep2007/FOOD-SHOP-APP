@@ -6,7 +6,8 @@ from "../middleware/auth.middleware.js";
 import {
     getMine,
     read,
-    readAll
+    readAll,
+    remove
 } from "../controllers/notification/notification.controller.js";
 
 
@@ -33,6 +34,12 @@ router.patch(
     "/:id/read",
     authMiddleware,
     read
+);
+
+router.delete(
+    "/:id",
+    authMiddleware,
+    remove
 );
 
 

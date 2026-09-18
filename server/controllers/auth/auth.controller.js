@@ -11,7 +11,9 @@ import {
     forgotPassword,
     resetPassword,
     changePassword,
-    updateProfileImage
+    updateProfileImage,
+    updateShopLocation,
+    getShopLocation
 } from "../../services/auth/auth.service.js";
 
 
@@ -528,6 +530,24 @@ const updateProfileImageController = async(
     }
 };
 
+const updateShopLocationController = async(req, res, next) => {
+    try {
+        const shopLocation = await updateShopLocation(req.user.userId, req.body);
+        return res.status(200).json({ success: true, data: { shopLocation } });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getShopLocationController = async(req, res, next) => {
+    try {
+        const shopLocation = await getShopLocation();
+        return res.status(200).json({ success: true, data: { shopLocation } });
+    } catch (error) {
+        next(error);
+    }
+};
+
 
 export {
 
@@ -555,6 +575,8 @@ export {
 
     changePasswordController,
 
-    updateProfileImageController
+    updateProfileImageController,
+    updateShopLocationController,
+    getShopLocationController
 
 };

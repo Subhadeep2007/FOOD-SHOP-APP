@@ -37,6 +37,14 @@ const userSchema = new mongoose.Schema({
         default: ""
     },
 
+    shopLocation: {
+        name: { type: String, trim: true, default: "" },
+        address: { type: String, trim: true, default: "" },
+        phone: { type: String, trim: true, default: "" },
+        latitude: { type: Number },
+        longitude: { type: Number }
+    },
+
     // ========================================
     // EMAIL VERIFICATION
     // ========================================
