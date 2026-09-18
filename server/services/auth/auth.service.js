@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 
 import User from "../../models/user.model.js";
 import PendingRegistration from "../../models/pendingRegistration.model.js";
+import cloudinary from "../../config/cloudinary.js";
 
 import generateOTP from "../../utils/generateOTP.js";
 import sendEmail from "../../utils/sendEmail.js";
@@ -1231,6 +1232,69 @@ const changePassword = async({
 };
 
 
+const updateProfileImage = async(
+    userId,
+    file
+) => {
+
+    if (!file) {
+        throw createError(
+            "Profile image is required",
+            400
+        );
+    }
+
+    if (!file.mimetype ||
+        !file.mimetype.startsWith(
+            "image/"
+        )
+    ) {
+        throw createError(
+            "Only image files are allowed",
+            400
+        );
+    }
+
+    const user =
+        await User.findById(
+            userId
+        );
+
+    if (!user) {
+        throw createError(
+            "User not found",
+            404
+        );
+    }
+
+    const imageData =
+        "data:" +
+        file.mimetype +
+        ";base64," +
+        file.buffer.toString(
+            "base64"
+        );
+
+    const result =
+        await cloudinary.uploader.upload(
+            imageData,
+            {
+                folder: "food-shop/profiles",
+                resource_type: "image"
+            }
+        );
+
+    user.profileImage =
+        result.secure_url;
+
+    await user.save();
+
+    return getSafeUser(
+        user
+    );
+};
+
+
 export {
     registerUser,
     registerAdmin,
@@ -1243,5 +1307,6 @@ export {
     logoutAllSessions,
     forgotPassword,
     resetPassword,
-    changePassword
+    changePassword,
+    updateProfileImage
 };

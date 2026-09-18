@@ -12,7 +12,8 @@ import {
     logoutAll,
     forgotPasswordController,
     resetPasswordController,
-    changePasswordController
+    changePasswordController,
+    updateProfileImageController
 } from "../controllers/auth/auth.controller.js";
 
 import {
@@ -35,6 +36,9 @@ from "../middleware/auth.middleware.js";
 
 import authRateLimiter
 from "../middleware/rateLimit.middleware.js";
+
+import upload
+from "../middleware/upload.middleware.js";
 
 
 const router =
@@ -177,6 +181,16 @@ router.post(
     authMiddleware,
     validate(changePasswordSchema),
     changePasswordController
+);
+
+
+router.patch(
+    "/profile-image",
+    authMiddleware,
+    upload.single(
+        "profileImage"
+    ),
+    updateProfileImageController
 );
 
 

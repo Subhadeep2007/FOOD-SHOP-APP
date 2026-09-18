@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import Order
 from "../models/order.model.js";
 
+let socketServer = null;
+
 
 // ========================================
 // SOCKET AUTHENTICATION
@@ -472,11 +474,19 @@ const broadcastOrderStatus = async(
     }
 
 
+    const activeIo =
+        io ||
+        socketServer;
+
+    if (!activeIo) {
+        return;
+    }
+
     const room =
         `order:${orderId}`;
 
 
-    io.to(
+    activeIo.to(
         room
     ).emit(
         "order-status-updated", {
@@ -507,11 +517,15 @@ const broadcastOrderCancellation = async(
     }
 
 
+    if (!socketServer) {
+        return;
+    }
+
     const room =
         `order:${order._id}`;
 
 
-    io.to(
+    socketServer.to(
         room
     ).emit(
         "order-cancelled", {
@@ -610,6 +624,8 @@ const registerOrderSocket =
 const initializeOrderSocket = (
     io
 ) => {
+
+    socketServer = io;
 
     io.use(
         authenticateSocket

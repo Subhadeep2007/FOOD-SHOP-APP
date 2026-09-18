@@ -47,6 +47,8 @@ import adminCouponRoutes
 from "./routes/admin/coupon.routes.js";
 import adminAnalyticsRoutes
 from "./routes/admin/analytics.routes.js";
+import adminCategoryRoutes
+from "./routes/admin/category.routes.js";
 const app = express();
 
 
@@ -218,6 +220,10 @@ app.use(
 app.use(
     "/api/admin/analytics",
     adminAnalyticsRoutes
+);
+app.use(
+    "/api/admin/categories",
+    adminCategoryRoutes
 );
 // ========================================
 // 404 HANDLER

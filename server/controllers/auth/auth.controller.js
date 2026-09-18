@@ -10,7 +10,8 @@ import {
     logoutAllSessions,
     forgotPassword,
     resetPassword,
-    changePassword
+    changePassword,
+    updateProfileImage
 } from "../../services/auth/auth.service.js";
 
 
@@ -496,6 +497,38 @@ const changePasswordController = async(
 };
 
 
+const updateProfileImageController = async(
+    req,
+    res,
+    next
+) => {
+
+    try {
+
+        const user =
+            await updateProfileImage(
+                req.user.userId,
+                req.file
+            );
+
+        return res.status(200).json({
+
+            success: true,
+
+            message: "Profile image updated successfully.",
+
+            data: {
+                user
+            }
+        });
+
+    } catch (error) {
+
+        next(error);
+    }
+};
+
+
 export {
 
     register,
@@ -520,6 +553,8 @@ export {
 
     resetPasswordController,
 
-    changePasswordController
+    changePasswordController,
+
+    updateProfileImageController
 
 };
