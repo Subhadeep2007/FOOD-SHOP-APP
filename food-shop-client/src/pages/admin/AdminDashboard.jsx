@@ -1,265 +1,76 @@
-import {
-    Link
-} from "react-router";
-
-import {
-    useSelector
-} from "react-redux";
-
-import {
-    useEffect,
-    useState
-} from "react";
-
+import { Link } from "react-router";
+import { useSelector } from "react-redux";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { ArrowUpRight, Banknote, CalendarDays, CheckCircle2, ChevronRight, CircleDollarSign, CreditCard, Package, RefreshCw, ShoppingBag, Users } from "lucide-react";
+import { getCompleteAnalytics } from "../../api/adminApi";
 
-import {
-    getDashboard
-} from "../../api/adminApi";
+const money = (value) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(value || 0));
+const number = (value) => new Intl.NumberFormat("en-IN").format(Number(value || 0));
+const label = (value) => String(value || "Unknown").replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+const toInputDate = (date) => date.toISOString().slice(0, 10);
+const colors = ["#f97316", "#22c55e", "#3b82f6", "#a855f7", "#f43f5e"];
+
+function EmptyChart({ children }) { return <div className="mt-6 flex h-56 items-center justify-center rounded-2xl bg-slate-50 text-sm font-medium text-slate-400">{children}</div>; }
+
+function RevenueChart({ data }) {
+    if (!data.length) return <EmptyChart>No delivered sales in this date range</EmptyChart>;
+    const values = data.map((item) => Number(item.revenue || 0));
+    const max = Math.max(...values, 1);
+    const points = values.map((value, index) => `${values.length === 1 ? 50 : 4 + (index * 92) / (values.length - 1)},${90 - (value / max) * 72}`).join(" ");
+    const first = data[0]; const last = data[data.length - 1];
+    const day = (item) => new Date(item.year, item.month - 1, item.day).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+    return <div className="mt-6"><div className="h-56"><svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full overflow-visible" aria-label="Revenue trend chart" role="img">
+        {[20, 45, 70, 90].map((line) => <line key={line} x1="0" x2="100" y1={line} y2={line} stroke="#e2e8f0" strokeWidth="0.55" />)}
+        <polyline points={points} fill="none" stroke="#f97316" strokeWidth="2.1" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+        {points.split(" ").map((point) => { const [cx, cy] = point.split(","); return <circle key={point} cx={cx} cy={cy} r="1.6" fill="#fff" stroke="#f97316" strokeWidth="1" vectorEffect="non-scaling-stroke" />; })}
+    </svg></div><div className="mt-3 flex justify-between text-xs font-semibold text-slate-400"><span>{day(first)}</span><span>{day(last)}</span></div></div>;
+}
 
 function AdminDashboard() {
+    const { user } = useSelector((state) => state.auth);
+    const [analytics, setAnalytics] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [range, setRange] = useState(() => { const end = new Date(); const start = new Date(); start.setDate(end.getDate() - 29); return { startDate: toInputDate(start), endDate: toInputDate(end) }; });
 
-    const {
-        user
-    } = useSelector(
-        (state) =>
-            state.auth
-    );
+    const load = async (refresh = false) => {
+        refresh ? setRefreshing(true) : setLoading(true);
+        try { setAnalytics(await getCompleteAnalytics(range)); }
+        catch (error) { toast.error(error.response?.data?.message || "Unable to load dashboard analytics."); }
+        finally { setLoading(false); setRefreshing(false); }
+    };
+    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+    useEffect(() => { load(); }, []);
 
-    const [
-        dashboard,
-        setDashboard
-    ] = useState(null);
+    const statuses = useMemo(() => analytics?.orderStatus ?? [], [analytics]);
+    const statusTotal = useMemo(() => statuses.reduce((total, item) => total + Number(item.count || 0), 0), [statuses]);
+    const visibleStatuses = statuses.slice(0, 5);
+    const gradient = visibleStatuses.map((item, index) => {
+        const start = visibleStatuses.slice(0, index).reduce((total, current) => total + (Number(current.count || 0) / (statusTotal || 1)) * 100, 0);
+        const end = start + (Number(item.count || 0) / (statusTotal || 1)) * 100;
+        return `${colors[index]} ${start}% ${end}%`;
+    }).join(", ");
+    const preset = (days) => { const end = new Date(); const start = new Date(); start.setDate(end.getDate() - (days - 1)); setRange({ startDate: toInputDate(start), endDate: toInputDate(end) }); };
+    const cards = [
+        ["Total delivered revenue", money(analytics?.dashboard?.revenue?.totalRevenue), "All-time · COD + online", CircleDollarSign, "bg-orange-100 text-orange-600"],
+        ["Delivered orders", number(analytics?.sales?.totalOrders), `${number(analytics?.dashboard?.orders?.delivered)} all-time delivered`, ShoppingBag, "bg-blue-100 text-blue-600"],
+        ["Average order", money(analytics?.sales?.averageOrderValue), "Per delivered order", Banknote, "bg-violet-100 text-violet-600"],
+        ["Active customers", number(analytics?.users?.summary?.activeUsers), `${number(analytics?.users?.summary?.verifiedUsers)} verified`, Users, "bg-emerald-100 text-emerald-600"]
+    ];
 
-    const [
-        loading,
-        setLoading
-    ] = useState(true);
-
-    useEffect(() => {
-
-        const load =
-            async () => {
-
-                try {
-
-                    setDashboard(
-                        await getDashboard()
-                    );
-
-                } catch (error) {
-
-                    toast.error(
-                        error.response &&
-                        error.response.data &&
-                        error.response.data.message
-                            ? error.response.data.message
-                            : "Unable to load dashboard analytics."
-                    );
-
-                } finally {
-
-                    setLoading(false);
-                }
-            };
-
-        load();
-
-    }, []);
-
-    return (
-        <main className="min-h-screen bg-slate-100 p-4 md:p-8">
-
-            <div className="mx-auto max-w-7xl">
-
-                <div className="rounded-3xl bg-slate-900 p-8 text-white">
-
-                    <p className="text-sm font-bold uppercase tracking-widest text-slate-500">
-                        FoodShop Admin
-                    </p>
-
-                    <h1 className="mt-2 text-4xl font-black">
-                        Admin Dashboard
-                    </h1>
-
-                    <p className="mt-3 text-slate-300">
-                        Welcome{" "}
-                        {
-                            user &&
-                            user.name
-                                ? user.name
-                                : "Admin"
-                        }
-                    </p>
-
-                </div>
-
-                <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
-                    {loading ? (
-
-                        <div className="col-span-full rounded-2xl bg-white p-6 text-slate-500">
-                            Loading live analytics...
-                        </div>
-
-                    ) : (
-
-                        <>
-
-                            <div className="rounded-2xl bg-white p-5 shadow-sm">
-                                <p className="text-sm font-bold text-slate-500">
-                                    Total Users
-                                </p>
-                                <p className="mt-2 text-3xl font-black">
-                                    {dashboard &&
-                                    dashboard.users
-                                        ? dashboard.users.total
-                                        : 0}
-                                </p>
-                            </div>
-
-                            <div className="rounded-2xl bg-white p-5 shadow-sm">
-                                <p className="text-sm font-bold text-slate-500">
-                                    Total Orders
-                                </p>
-                                <p className="mt-2 text-3xl font-black">
-                                    {dashboard &&
-                                    dashboard.orders
-                                        ? dashboard.orders.total
-                                        : 0}
-                                </p>
-                            </div>
-
-                            <div className="rounded-2xl bg-white p-5 shadow-sm">
-                                <p className="text-sm font-bold text-slate-500">
-                                    Delivered Revenue
-                                </p>
-                                <p className="mt-2 text-3xl font-black">
-                                    ₹{Number(
-                                        dashboard &&
-                                        dashboard.revenue
-                                            ? dashboard.revenue.totalRevenue
-                                            : 0
-                                    ).toFixed(2)}
-                                </p>
-                            </div>
-
-                            <div className="rounded-2xl bg-white p-5 shadow-sm">
-                                <p className="text-sm font-bold text-slate-500">
-                                    Active Foods
-                                </p>
-                                <p className="mt-2 text-3xl font-black">
-                                    {dashboard &&
-                                    dashboard.foods
-                                        ? dashboard.foods.active
-                                        : 0}
-                                </p>
-                            </div>
-
-                        </>
-                    )}
-
-                </div>
-
-                <div className="mt-6 grid gap-4 md:grid-cols-3">
-
-                    <Link
-                        to="/admin/orders"
-                        className="rounded-2xl border bg-white p-6 shadow-sm transition hover:-translate-y-1"
-                    >
-                        <h2 className="text-xl font-black">
-                            Orders
-                        </h2>
-
-                        <p className="mt-2 text-sm text-slate-500">
-                            Review orders, delivery details and status.
-                        </p>
-                    </Link>
-
-                    <Link
-                        to="/admin/foods"
-                        className="rounded-2xl border bg-white p-6 shadow-sm transition hover:-translate-y-1"
-                    >
-                        <h2 className="text-xl font-black">
-                            Food Management
-                        </h2>
-
-                        <p className="mt-2 text-sm text-slate-500">
-                            Manage foods, price, stock and availability.
-                        </p>
-                    </Link>
-
-                    <Link
-                        to="/admin/categories"
-                        className="rounded-2xl border bg-white p-6 shadow-sm transition hover:-translate-y-1"
-                    >
-                        <h2 className="text-xl font-black">
-                            Categories
-                        </h2>
-
-                        <p className="mt-2 text-sm text-slate-500">
-                            Manage food categories.
-                        </p>
-                    </Link>
-
-                    <Link
-                        to="/admin/reviews"
-                        className="rounded-2xl border bg-white p-6 shadow-sm transition hover:-translate-y-1"
-                    >
-                        <h2 className="text-xl font-black">
-                            Reviews
-                        </h2>
-
-                        <p className="mt-2 text-sm text-slate-500">
-                            View customer reviews.
-                        </p>
-                    </Link>
-
-                    <Link
-                        to="/admin/account"
-                        className="rounded-2xl border bg-white p-6 shadow-sm transition hover:-translate-y-1"
-                    >
-                        <h2 className="text-xl font-black">
-                            My Account
-                        </h2>
-
-                        <p className="mt-2 text-sm text-slate-500">
-                            View your profile, change your password and manage sessions.
-                        </p>
-                    </Link>
-
-                    <Link
-                        to="/admin/users"
-                        className="rounded-2xl border bg-white p-6 shadow-sm transition hover:-translate-y-1"
-                    >
-                        <h2 className="text-xl font-black">
-                            All Customers
-                        </h2>
-
-                        <p className="mt-2 text-sm text-slate-500">
-                            View customer profiles, email verification and account status.
-                        </p>
-                    </Link>
-
-                    <Link
-                        to="/admin/refunds"
-                        className="rounded-2xl border bg-white p-6 shadow-sm transition hover:-translate-y-1"
-                    >
-                        <h2 className="text-xl font-black">
-                            Refunds
-                        </h2>
-
-                        <p className="mt-2 text-sm text-slate-500">
-                            Process Razorpay online refunds and COD bank-transfer refunds.
-                        </p>
-                    </Link>
-
-                </div>
-
-            </div>
-
-        </main>
-    );
+    return <main className="min-h-screen bg-[#f8fafc] p-4 text-slate-900 md:p-8"><div className="mx-auto max-w-7xl">
+        <section className="overflow-hidden rounded-[2rem] bg-slate-950 px-6 py-8 text-white shadow-xl md:px-10 md:py-10"><div className="flex flex-col justify-between gap-7 lg:flex-row lg:items-end"><div><p className="text-sm font-bold uppercase tracking-[0.22em] text-orange-400">FoodShop analytics</p><h1 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">Welcome, {user?.name || "Admin"}.</h1><p className="mt-3 max-w-xl text-slate-400">A clear view of your orders, sales and customer activity.</p></div><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">{user?.profileImage ? <img src={user.profileImage} alt={user.name || "Admin"} className="h-12 w-12 rounded-full border-2 border-orange-400 object-cover" /> : <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 font-black text-white">{(user?.name || "A").slice(0, 1).toUpperCase()}</div>}<div className="min-w-0"><p className="truncate font-bold">{user?.name || "Admin"}</p><p className="truncate text-sm text-slate-400">{user?.email || ""}</p><p className="mt-1 flex items-center gap-1 text-xs font-bold text-emerald-400"><CheckCircle2 size={13} /> {number(analytics?.dashboard?.foods?.active)} menu items live</p></div></div></div></section>
+        <form onSubmit={(event) => { event.preventDefault(); load(true); }} className="mt-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between"><div className="flex items-center gap-2 text-sm font-bold text-slate-700"><CalendarDays size={18} className="text-orange-500" /> Sales period</div><div className="flex flex-wrap items-center gap-2"><button type="button" onClick={() => preset(7)} className="rounded-lg px-3 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100">7 days</button><button type="button" onClick={() => preset(30)} className="rounded-lg px-3 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100">30 days</button><input required type="date" value={range.startDate} max={range.endDate} onChange={(event) => setRange({ ...range, startDate: event.target.value })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm" /><span className="text-slate-400">to</span><input required type="date" value={range.endDate} min={range.startDate} onChange={(event) => setRange({ ...range, endDate: event.target.value })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm" /><button className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-60" disabled={refreshing}>{refreshing ? <RefreshCw size={16} className="animate-spin" /> : "Apply"}</button></div></form>
+        {loading ? <div className="mt-6 rounded-2xl bg-white p-10 text-center font-medium text-slate-500 shadow-sm">Loading your live analytics…</div> : <>
+            <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map(([title, value, note, Icon, color]) => <article key={title} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"><div className="flex items-start justify-between"><div><p className="text-sm font-bold text-slate-500">{title}</p><p className="mt-2 text-3xl font-black tracking-tight">{value}</p></div><span className={`rounded-xl p-3 ${color}`}><Icon size={21} /></span></div><p className="mt-3 text-xs font-medium text-slate-400">{note}</p></article>)}</section>
+            <section className="mt-6 grid gap-6 xl:grid-cols-3"><article className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm xl:col-span-2"><div className="flex items-start justify-between"><div><p className="text-sm font-bold text-slate-500">Revenue overview</p><h2 className="mt-1 text-2xl font-black">{money(analytics?.sales?.totalRevenue)}</h2></div><span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-600"><ArrowUpRight size={14} /> Delivered sales</span></div><RevenueChart data={analytics?.dailySales || []} /></article>
+                <article className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"><p className="text-sm font-bold text-slate-500">Order status</p><p className="mt-1 text-2xl font-black">{number(statusTotal)} orders</p>{visibleStatuses.length ? <><div className="mx-auto my-6 flex h-36 w-36 items-center justify-center rounded-full" style={{ background: `conic-gradient(${gradient})` }}><div className="flex h-24 w-24 flex-col items-center justify-center rounded-full bg-white"><span className="text-2xl font-black">{number(analytics?.dashboard?.orders?.delivered)}</span><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Delivered</span></div></div><div className="space-y-2">{visibleStatuses.map((item, index) => <div className="flex items-center justify-between text-sm" key={item.status}><span className="flex items-center gap-2 font-medium text-slate-600"><i className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: colors[index] }} />{label(item.status)}</span><strong>{number(item.count)}</strong></div>)}</div></> : <EmptyChart>No orders yet</EmptyChart>}</article></section>
+            <section className="mt-6 grid gap-6 lg:grid-cols-5"><article className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm lg:col-span-3"><div className="flex items-center justify-between"><div><p className="text-sm font-bold text-slate-500">Best sellers</p><h2 className="mt-1 text-xl font-black">Top dishes by quantity</h2></div><Link to="/admin/foods" className="inline-flex items-center gap-1 text-sm font-bold text-orange-600">Manage menu <ChevronRight size={16} /></Link></div><div className="mt-5 space-y-3">{(analytics?.topFoods || []).length ? analytics.topFoods.slice(0, 5).map((food, index) => <div key={food.foodId || food.foodName} className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><span className="w-5 text-sm font-black text-slate-400">{index + 1}</span>{food.image ? <img src={food.image} alt="" className="h-10 w-10 rounded-lg object-cover" /> : <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-orange-600"><Package size={18} /></span>}<div className="min-w-0 flex-1"><p className="truncate font-bold">{food.foodName}</p><p className="text-xs text-slate-500">{number(food.quantitySold)} items sold</p></div><strong className="text-sm">{money(food.revenue)}</strong></div>) : <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-400">No delivered food sales yet.</p>}</div></article>
+                <article className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm lg:col-span-2"><p className="text-sm font-bold text-slate-500">Successful delivered revenue</p><p className="mt-1 text-xs text-slate-400">Online and COD, only after delivery</p><div className="mt-5 space-y-4">{(analytics?.sales?.revenueByPaymentMethod || []).map((payment) => <div key={payment.paymentMethod} className="flex justify-between border-b border-slate-100 pb-3"><div className="flex items-center gap-2 font-semibold"><CreditCard size={17} className="text-blue-500" />{label(payment.paymentMethod)}</div><div className="text-right"><p className="font-black">{money(payment.revenue)}</p><p className="text-xs text-slate-400">{number(payment.orders)} delivered orders</p></div></div>)}<div className="flex items-center justify-between rounded-xl bg-rose-50 p-3"><span className="font-bold text-rose-700">Refunded amount</span><strong className="text-rose-700">{money(analytics?.refunds?.totalRefunded)}</strong></div></div></article></section>
+            <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[["Orders", "/admin/orders", "Review and manage incoming orders"], ["Menu", "/admin/foods", "Update dishes, stock and pricing"], ["Categories", "/admin/categories", "Organize your food categories"], ["Customers", "/admin/users", "View your customer base"], ["Refunds", "/admin/refunds", "Process refund requests"], ["My Account", "/admin/account", "Manage your profile and settings"]].map(([title, to, description]) => <Link key={to} to={to} className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md"><p className="font-black">{title}</p><p className="mt-1 text-sm text-slate-500">{description}</p><ChevronRight size={18} className="mt-4 text-orange-500 transition group-hover:translate-x-1" /></Link>)}</section>
+        </>}
+    </div></main>;
 }
 
 export default AdminDashboard;

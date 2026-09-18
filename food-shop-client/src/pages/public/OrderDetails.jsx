@@ -88,7 +88,7 @@ function OrderDetails() {
 
     const address = order.deliveryAddress || {};
     const canCancel = order.status === "PLACED";
-    const canRequestRefund = ["DELIVERED", "CANCELLED"].includes(order.status) && (order.paymentMethod === "COD" || order.paymentStatus === "SUCCESS");
+    const canRequestRefund = ["PLACED", "CONFIRMED"].includes(order.status) && (order.paymentMethod === "COD" || order.paymentStatus === "SUCCESS");
     const canDelete = ["DELIVERED", "CANCELLED"].includes(order.status);
     const activeStage = stages.indexOf(order.status);
 

@@ -304,15 +304,15 @@ const createRefundRequest = async({
     // ========================================
 
     if (![
-            "DELIVERED",
-            "CANCELLED"
+            "PLACED",
+            "CONFIRMED"
         ].includes(
             order.status
         )) {
 
         const error =
             new Error(
-                "Refund is not available for this order yet"
+                "Refund requests are not available once the order is being prepared"
             );
 
         error.statusCode = 400;

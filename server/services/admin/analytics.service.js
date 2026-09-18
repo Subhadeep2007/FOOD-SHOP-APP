@@ -188,8 +188,9 @@ const getSalesAnalytics = async({
     }
 
 
-    const result =
-        await Order.aggregate([
+    const [result, revenueByPaymentMethod] =
+        await Promise.all([
+            Order.aggregate([
 
             {
                 $match: match
@@ -231,6 +232,27 @@ const getSalesAnalytics = async({
                 }
             }
 
+            ]),
+
+            // Revenue is intentionally based on delivered orders, so both COD
+            // and online payments are counted only after a successful delivery.
+            Order.aggregate([
+                {
+                    $match: match
+                },
+
+                {
+                    $group: {
+                        _id: "$paymentMethod",
+                        orders: { $sum: 1 },
+                        revenue: { $sum: "$totalAmount" }
+                    }
+                },
+
+                {
+                    $sort: { revenue: -1 }
+                }
+            ])
         ]);
 
 
@@ -252,7 +274,9 @@ const getSalesAnalytics = async({
 
             totalTax: 0,
 
-            totalSubtotal: 0
+            totalSubtotal: 0,
+
+            revenueByPaymentMethod: []
 
         };
     }
@@ -296,6 +320,14 @@ const getSalesAnalytics = async({
             Number(
                 result[0].totalSubtotal || 0
             ).toFixed(2)
+        ),
+
+        revenueByPaymentMethod: revenueByPaymentMethod.map(
+            item => ({
+                paymentMethod: item._id,
+                orders: item.orders,
+                revenue: Number(Number(item.revenue || 0).toFixed(2))
+            })
         )
 
     };
