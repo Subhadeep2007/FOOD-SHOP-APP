@@ -1,6 +1,16 @@
 import {
-    validateCoupon
+    validateCoupon,
+    getAvailableCoupons
 } from "../../services/coupon/coupon.service.js";
+
+const getAvailable = async(req, res, next) => {
+    try {
+        const coupons = await getAvailableCoupons();
+        return res.status(200).json({ success: true, data: coupons });
+    } catch (error) {
+        next(error);
+    }
+};
 
 
 // ========================================
@@ -53,5 +63,6 @@ const validate = async(
 
 
 export {
-    validate
+    validate,
+    getAvailable
 };

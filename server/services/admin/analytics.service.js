@@ -377,6 +377,38 @@ const getOrderStatusAnalytics = async() => {
 
 
 // ========================================
+// COD PAYMENTS AWAITING DELIVERY COLLECTION
+// ========================================
+
+const getPendingCODPayments = async() => {
+
+    return Order.find({
+        paymentMethod: "COD",
+        paymentStatus: "PENDING",
+        status: {
+            $nin: [
+                "DELIVERED",
+                "CANCELLED",
+                "PAYMENT_PENDING"
+            ]
+        },
+        deletedByAdminAt: null
+    })
+    .select(
+        "orderNumber items totalAmount paymentMethod paymentStatus status deliveryAddress createdAt"
+    )
+    .populate(
+        "user",
+        "name email profileImage"
+    )
+    .sort({
+        createdAt: -1
+    })
+    .limit(20);
+};
+
+
+// ========================================
 // PAYMENT ANALYTICS
 // ========================================
 
@@ -993,7 +1025,8 @@ const getCompleteAnalytics = async({
         foodPerformance,
         users,
         refunds,
-        dailySales
+        dailySales,
+        pendingCODPayments
     ] = await Promise.all([
 
         getDashboardSummary(),
@@ -1026,7 +1059,9 @@ const getCompleteAnalytics = async({
             startDate,
             endDate
 
-        })
+        }),
+
+        getPendingCODPayments()
 
     ]);
 
@@ -1049,7 +1084,9 @@ const getCompleteAnalytics = async({
 
         refunds,
 
-        dailySales
+        dailySales,
+
+        pendingCODPayments
 
     };
 };
@@ -1078,6 +1115,8 @@ export {
     getRefundAnalytics,
 
     getDailySales,
+
+    getPendingCODPayments,
 
     getCompleteAnalytics
 

@@ -4,6 +4,7 @@ import Order from "../../models/order.model.js";
 import Cart from "../../models/cart.model.js";
 import Food from "../../models/food.model.js";
 import Address from "../../models/address.model.js";
+import Payment from "../../models/payment.model.js";
 import generateOrderId from "../../utils/generateOrderId.js";
 
 import {
@@ -346,6 +347,8 @@ const createOrder = async({
 
                 discount: discount,
 
+                couponCode: appliedCoupon ? appliedCoupon.code : null,
+
                 deliveryFee: deliveryFee,
 
                 tax: tax,
@@ -356,7 +359,8 @@ const createOrder = async({
 
                 paymentStatus: "PENDING",
 
-                status: "PLACED"
+                // An online order is only placed after Razorpay verifies payment.
+                status: paymentMethod === "ONLINE" ? "PAYMENT_PENDING" : "PLACED"
 
             });
 
@@ -510,14 +514,16 @@ const createOrder = async({
         // CLEAR CART
         // ========================================
 
-        cart.items = [];
+        if (paymentMethod === "COD") {
 
+            cart.items = [];
 
-        await cart.save({
+            await cart.save({
 
-            session
+                session
 
-        });
+            });
+        }
 
 
         await session.commitTransaction();
@@ -526,6 +532,8 @@ const createOrder = async({
         // ========================================
         // ORDER NOTIFICATION
         // ========================================
+
+        if (paymentMethod === "COD") {
 
         await createNotification({
 
@@ -548,6 +556,8 @@ const createOrder = async({
             }
 
         });
+
+        }
 
 
         return Order.findById(
@@ -588,7 +598,9 @@ const getMyOrders = async(
 
             user: userId,
 
-            deletedByCustomerAt: null
+            deletedByCustomerAt: null,
+
+            status: { $ne: "PAYMENT_PENDING" }
 
         })
         .sort({
@@ -837,7 +849,9 @@ const getAllOrders = async({
 }) => {
 
     const query = {
-        deletedByAdminAt: null
+        deletedByAdminAt: null,
+
+        status: { $ne: "PAYMENT_PENDING" }
     };
 
 
@@ -1081,6 +1095,10 @@ const updateOrderStatus = async(
 
             phone: String(
                 deliveryDetails.phone
+            ).trim(),
+
+            whatsappNumber: String(
+                deliveryDetails.whatsappNumber
             ).trim()
 
         };
@@ -1089,6 +1107,33 @@ const updateOrderStatus = async(
 
     order.status =
         newStatus;
+
+
+    // COD is collected on delivery. Once delivered, it is no longer a
+    // pending payment and both the order and payment record are settled.
+    if (
+        newStatus === "DELIVERED" &&
+        order.paymentMethod === "COD"
+    ) {
+
+        order.paymentStatus =
+            "SUCCESS";
+
+        await Payment.findOneAndUpdate(
+            {
+                order: order._id,
+                paymentMethod: "COD",
+                status: "PENDING"
+            },
+            {
+                $set: {
+                    status: "CAPTURED",
+                    capturedAt: new Date(),
+                    paidAt: new Date()
+                }
+            }
+        );
+    }
 
 
     await order.save();

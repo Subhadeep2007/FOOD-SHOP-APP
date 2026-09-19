@@ -7,7 +7,7 @@ function MainLayout() {
 
     return (
 
-        <div className="min-h-screen bg-white text-slate-900">
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#ffedd5,_transparent_30%),linear-gradient(180deg,_#fff,_#f8fafc)] text-slate-900">
 
             <Navbar />
 

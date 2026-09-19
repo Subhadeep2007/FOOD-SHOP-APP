@@ -82,17 +82,15 @@ function Checkout() {
 
     const payOnline = async (order) => {
         const available = await loadRazorpay();
-        if (!available) throw new Error("Unable to load Razorpay checkout. Your order was created; please check My Orders.");
+        if (!available) throw new Error("Unable to load Razorpay checkout. Your cart is still saved; please try again.");
 
         const payment = await createRazorpayOrder(order._id);
         let checkoutFinished = false;
         const stopPendingCheckout = (notice) => {
             if (checkoutFinished) return;
             checkoutFinished = true;
-            dispatch(resetCart());
             toast.error(notice);
             setPlacing(false);
-            navigate("/orders/" + order._id, { replace: true });
         };
         const options = {
             key: payment.keyId,
@@ -109,10 +107,8 @@ function Checkout() {
                     await verifyRazorpayPayment({ orderId: order._id, razorpayOrderId: response.razorpay_order_id, razorpayPaymentId: response.razorpay_payment_id, razorpaySignature: response.razorpay_signature });
                     finish(order._id, "Payment successful. Your order is placed.");
                 } catch (error) {
-                    dispatch(resetCart());
                     toast.error(message(error));
                     setPlacing(false);
-                    navigate("/orders/" + order._id, { replace: true });
                 }
             },
             modal: { ondismiss: () => stopPendingCheckout("Payment checkout was cancelled. Your order is available in My Orders.") },
@@ -127,11 +123,8 @@ function Checkout() {
         if (placing) return;
         if (!addressId) { toast.error("Select a delivery address."); return; }
         setPlacing(true);
-        let createdOrder = null;
         try {
             const order = await createOrder({ addressId, paymentMethod: method, couponCode: coupon.trim() || undefined });
-            createdOrder = order;
-            dispatch(resetCart());
             if (method === "COD") {
                 await createCODPayment(order._id);
                 finish(order._id, "Order placed successfully.");
@@ -141,7 +134,6 @@ function Checkout() {
         } catch (error) {
             toast.error(message(error));
             setPlacing(false);
-            if (createdOrder) navigate("/orders/" + createdOrder._id, { replace: true });
         }
     };
 

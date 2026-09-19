@@ -3,6 +3,8 @@ import Razorpay from "razorpay";
 
 import Payment from "../../models/payment.model.js";
 import Order from "../../models/order.model.js";
+import Cart from "../../models/cart.model.js";
+import { createNotification } from "../notification/notification.service.js";
 
 
 // ========================================
@@ -14,6 +16,36 @@ const razorpay =
         key_id: process.env.RAZORPAY_KEY_ID,
         key_secret: process.env.RAZORPAY_KEY_SECRET
     });
+
+
+const finalizePendingOnlineOrder = async(orderId, userId) => {
+    const order = await Order.findOneAndUpdate(
+        { _id: orderId, status: "PAYMENT_PENDING" },
+        { $set: { status: "PLACED", paymentStatus: "SUCCESS" } },
+        { new: true }
+    );
+
+    if (!order) return null;
+
+    await Cart.updateOne(
+        { user: userId },
+        { $set: { items: [] } }
+    );
+
+    await createNotification({
+        userId,
+        type: "ORDER",
+        title: "Order placed successfully",
+        message: `Your order ${order.orderNumber} has been placed successfully.`,
+        data: {
+            orderId: order._id,
+            orderNumber: order.orderNumber,
+            status: order.status
+        }
+    });
+
+    return order;
+};
 
 
 // ========================================
@@ -420,6 +452,28 @@ const verifyPayment = async({
         order.paymentStatus =
             "SUCCESS";
 
+        if (order.status === "PAYMENT_PENDING") {
+
+            order.status = "PLACED";
+
+            await Cart.updateOne(
+                { user: userId },
+                { $set: { items: [] } }
+            );
+
+            await createNotification({
+                userId: userId,
+                type: "ORDER",
+                title: "Order placed successfully",
+                message: `Your order ${order.orderNumber} has been placed successfully.`,
+                data: {
+                    orderId: order._id,
+                    orderNumber: order.orderNumber,
+                    status: order.status
+                }
+            });
+        }
+
     } else if (
         razorpayPayment.status ===
         "authorized"
@@ -693,17 +747,17 @@ const processWebhook = async(
         await payment.save();
 
 
-        await Order.findByIdAndUpdate(
-
+        const finalizedOrder = await finalizePendingOnlineOrder(
             payment.order,
-
-            {
-
-                paymentStatus: "SUCCESS"
-
-            }
-
+            payment.user
         );
+
+        if (!finalizedOrder) {
+            await Order.findByIdAndUpdate(
+                payment.order,
+                { paymentStatus: "SUCCESS" }
+            );
+        }
     }
 
 
@@ -819,17 +873,17 @@ const processWebhook = async(
         }
 
 
-        await Order.findByIdAndUpdate(
-
+        const finalizedOrder = await finalizePendingOnlineOrder(
             payment.order,
-
-            {
-
-                paymentStatus: "SUCCESS"
-
-            }
-
+            payment.user
         );
+
+        if (!finalizedOrder) {
+            await Order.findByIdAndUpdate(
+                payment.order,
+                { paymentStatus: "SUCCESS" }
+            );
+        }
     }
 
 

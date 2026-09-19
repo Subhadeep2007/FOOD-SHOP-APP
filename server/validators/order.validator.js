@@ -160,6 +160,14 @@ const updateOrderStatusSchema = [
         "Invalid delivery boy phone number"
     ),
 
+    body("deliveryDetails.whatsappNumber")
+    .optional()
+    .trim()
+    .matches(/^[0-9+\-\s()]{7,20}$/)
+    .withMessage(
+        "Invalid delivery boy WhatsApp number"
+    ),
+
     body("deliveryDetails")
     .custom((value, {
         req
@@ -178,11 +186,15 @@ const updateOrderStatusSchema = [
                 !value.phone ||
                 !String(
                     value.phone
+                ).trim() ||
+                !value.whatsappNumber ||
+                !String(
+                    value.whatsappNumber
                 ).trim()
             ) {
 
                 throw new Error(
-                    "Delivery boy name and phone are required when confirming an order"
+                    "Delivery boy name, phone and WhatsApp number are required when confirming an order"
                 );
             }
         }

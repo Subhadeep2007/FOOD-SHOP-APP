@@ -1,5 +1,6 @@
 import {
     ArrowRight,
+    Copy,
     Clock3,
     ShieldCheck,
     Truck
@@ -9,6 +10,7 @@ import { Navigate } from "react-router";
 import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { getShopLocation } from "../../api/authApi";
+import { getAvailableCoupons } from "../../api/couponApi";
 
 function Home() {
 
@@ -16,6 +18,7 @@ function Home() {
     const [shopLocation, setShopLocation] = useState(null);
     const [deliveryMessage, setDeliveryMessage] = useState("");
     const [checkingDelivery, setCheckingDelivery] = useState(false);
+    const [coupons, setCoupons] = useState([]);
 
     useEffect(() => {
         getShopLocation()
@@ -25,6 +28,19 @@ function Home() {
             })
             .catch(() => setShopLocation(null));
     }, []);
+
+    useEffect(() => {
+        getAvailableCoupons().then((data) => setCoupons(Array.isArray(data) ? data : [])).catch(() => setCoupons([]));
+    }, []);
+
+    const copyCoupon = async (code) => {
+        try {
+            await navigator.clipboard.writeText(code);
+            setDeliveryMessage(`Coupon ${code} copied. Apply it at checkout.`);
+        } catch {
+            setDeliveryMessage(`Use coupon code: ${code}`);
+        }
+    };
 
     if (isAuthenticated && user && user.role === "admin") {
         return <Navigate to="/admin" replace />;
@@ -194,6 +210,23 @@ function Home() {
                 </div>
 
             </section>
+
+            {coupons.length ? (
+                <section className="bg-slate-950 px-4 py-12 sm:px-6 lg:px-8">
+                    <div className="mx-auto max-w-7xl">
+                        <div className="flex flex-wrap items-end justify-between gap-3">
+                            <div><p className="text-sm font-bold uppercase tracking-widest text-orange-400">Limited-time offers</p><h2 className="mt-2 text-3xl font-black text-white">Save more on your favourite food</h2></div>
+                            <a href="/menu" className="font-bold text-orange-400 hover:text-orange-300">Browse menu →</a>
+                        </div>
+                        <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {coupons.map((coupon) => {
+                                const offer = coupon.discountType === "PERCENTAGE" ? `${coupon.discountValue}% OFF` : `₹${coupon.discountValue} OFF`;
+                                return <article key={coupon._id} className="rounded-2xl border border-white/10 bg-white p-5 text-slate-900 shadow-lg"><div className="flex items-start justify-between gap-3"><span className="rounded-lg bg-orange-100 px-3 py-1.5 text-lg font-black text-orange-600">{offer}</span><button type="button" onClick={() => copyCoupon(coupon.code)} className="inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-bold hover:bg-slate-50"><Copy size={14} /> Copy</button></div><p className="mt-4 font-mono text-xl font-black tracking-wider">{coupon.code}</p><p className="mt-2 min-h-10 text-sm text-slate-600">{coupon.description || `Apply this offer at checkout for extra savings.`}</p><div className="mt-4 border-t pt-3 text-xs font-medium text-slate-500"><p>Valid until {new Date(coupon.expiresAt).toLocaleDateString()}</p>{coupon.minimumOrderAmount > 0 ? <p className="mt-1">Min. order ₹{coupon.minimumOrderAmount}</p> : null}{coupon.maxDiscount !== null && coupon.discountType === "PERCENTAGE" ? <p className="mt-1">Maximum saving ₹{coupon.maxDiscount}</p> : null}</div></article>;
+                            })}
+                        </div>
+                    </div>
+                </section>
+            ) : null}
 
             {shopLocation ? (
                 <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">

@@ -1,6 +1,25 @@
 import Coupon from "../../models/coupon.model.js";
 import CouponUsage from "../../models/couponUsage.model.js";
 
+const getAvailableCoupons = async() => {
+    const now = new Date();
+
+    // Do not expose disabled, expired, not-yet-started, or exhausted offers.
+    return Coupon.find({
+        isActive: true,
+        startsAt: { $lte: now },
+        expiresAt: { $gt: now },
+        $expr: {
+            $or: [
+                { $eq: ["$usageLimit", null] },
+                { $lt: ["$usedCount", "$usageLimit"] }
+            ]
+        }
+    })
+        .select("code description discountType discountValue maxDiscount minimumOrderAmount expiresAt usageLimit usedCount")
+        .sort({ expiresAt: 1 });
+};
+
 
 // ========================================
 // VALIDATE COUPON
@@ -173,5 +192,6 @@ const validateCoupon = async({
 
 
 export {
-    validateCoupon
+    validateCoupon,
+    getAvailableCoupons
 };

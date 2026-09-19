@@ -118,7 +118,7 @@ function Navbar() {
         };
 
     return (
-        <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <header className="sticky top-0 z-50 border-b border-orange-100 bg-white/90 shadow-[0_4px_24px_rgba(15,23,42,0.05)] backdrop-blur-xl">
 
             <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
 
@@ -126,7 +126,7 @@ function Navbar() {
 
                 <Link
                     to="/"
-                    className="shrink-0 text-xl font-black text-slate-900"
+                    className="shrink-0 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 px-3 py-2 text-xl font-black tracking-tight text-white shadow-sm"
                 >
                     FoodShop
                 </Link>
@@ -180,6 +180,13 @@ function Navbar() {
                                 className="text-sm font-semibold text-slate-600 hover:text-slate-900"
                             >
                                 My Orders
+                            </NavLink>
+
+                            <NavLink
+                                to="/order-history"
+                                className="text-sm font-semibold text-slate-600 hover:text-slate-900"
+                            >
+                                Order History
                             </NavLink>
 
                             <NavLink
@@ -435,6 +442,14 @@ function Navbar() {
                                     className="rounded-xl px-3 py-3 font-semibold hover:bg-slate-50"
                                 >
                                     My Orders
+                                </Link>
+
+                                <Link
+                                    onClick={() => setOpen(false)}
+                                    to="/order-history"
+                                    className="rounded-xl px-3 py-3 font-semibold hover:bg-slate-50"
+                                >
+                                    Order History
                                 </Link>
 
                                 <Link

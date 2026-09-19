@@ -243,7 +243,8 @@ const orderSchema =
                 "READY_FOR_PICKUP",
                 "OUT_FOR_DELIVERY",
                 "DELIVERED",
-                "CANCELLED"
+                "CANCELLED",
+                "PAYMENT_PENDING"
             ],
             default: "PLACED",
             index: true
@@ -271,6 +272,13 @@ const orderSchema =
         cancelledAt: {
             type: Date,
             default: null
+        },
+
+        couponCode: {
+            type: String,
+            default: null,
+            uppercase: true,
+            trim: true
         },
 
         // Visibility is tracked independently, so a customer hiding an order
@@ -307,6 +315,12 @@ const orderSchema =
             },
 
             phone: {
+                type: String,
+                trim: true,
+                default: ""
+            },
+
+            whatsappNumber: {
                 type: String,
                 trim: true,
                 default: ""

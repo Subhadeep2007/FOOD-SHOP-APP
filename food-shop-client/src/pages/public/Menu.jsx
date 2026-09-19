@@ -624,7 +624,7 @@ function Menu() {
                 HEADER
             ======================================== */}
 
-            <section className="border-b border-slate-200 bg-white">
+            <section className="border-b border-orange-100 bg-[radial-gradient(circle_at_top_right,_#ffedd5,_transparent_42%),#fff]">
 
                 <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
 
@@ -635,7 +635,7 @@ function Menu() {
                     </p>
 
 
-                    <h1 className="mt-2 text-4xl font-black tracking-tight text-slate-900 md:text-5xl">
+                    <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
 
                         Find something delicious.
 
@@ -651,7 +651,7 @@ function Menu() {
 
                     {/* SEARCH */}
 
-                    <div className="mt-8 flex max-w-2xl items-center gap-2 rounded-2xl border border-slate-300 bg-white p-2 shadow-sm">
+                    <div className="mt-8 flex max-w-2xl items-center gap-2 rounded-2xl border border-orange-200 bg-white/95 p-2 shadow-lg shadow-orange-950/5 focus-within:border-orange-400 focus-within:ring-4 focus-within:ring-orange-100">
 
                         <Search
                             className="ml-2 text-slate-400"

@@ -100,6 +100,9 @@ import AdminOrders
 import AdminUsers
     from "./pages/admin/AdminUsers";
 
+import AdminCoupons
+    from "./pages/admin/AdminCoupons";
+
 import Notifications
     from "./pages/public/Notifications";
 
@@ -223,6 +226,13 @@ function App() {
 
                         <Route
                             path="/orders"
+                            element={
+                                <Orders />
+                            }
+                        />
+
+                        <Route
+                            path="/order-history"
                             element={
                                 <Orders />
                             }
@@ -376,6 +386,13 @@ function App() {
                         path="/admin/users"
                         element={
                             <AdminUsers />
+                        }
+                    />
+
+                    <Route
+                        path="/admin/coupons"
+                        element={
+                            <AdminCoupons />
                         }
                     />
 

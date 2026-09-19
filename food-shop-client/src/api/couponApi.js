@@ -5,4 +5,9 @@ const validateCoupon = async (code, orderAmount) => {
     return response.data && response.data.data ? response.data.data : response.data;
 };
 
-export { validateCoupon };
+const getAvailableCoupons = async () => {
+    const response = await api.get("/coupons/available");
+    return response.data && response.data.data ? response.data.data : response.data;
+};
+
+export { validateCoupon, getAvailableCoupons };

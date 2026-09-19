@@ -114,6 +114,16 @@ const refundIdSchema = [
 
 ];
 
+const updateRefundBankDetailsSchema = [
+    param("id").isMongoId().withMessage("Valid refund ID is required"),
+    body("bankDetails").isObject().withMessage("Bank details are required"),
+    body("bankDetails.accountHolderName").trim().isLength({ min: 1, max: 100 }).withMessage("Invalid account holder name"),
+    body("bankDetails.accountNumber").trim().isLength({ min: 4, max: 30 }).withMessage("Invalid account number"),
+    body("bankDetails.ifscCode").trim().isLength({ min: 4, max: 20 }).withMessage("Invalid IFSC code"),
+    body("bankDetails.bankName").trim().isLength({ min: 1, max: 150 }).withMessage("Invalid bank name"),
+    body("bankDetails.accountType").isIn(["SAVINGS", "CURRENT"]).withMessage("Account type must be SAVINGS or CURRENT")
+];
+
 
 // ========================================
 // ADMIN REFUND LIST
@@ -241,6 +251,7 @@ export {
     createRefundSchema,
 
     refundIdSchema,
+    updateRefundBankDetailsSchema,
 
     adminRefundQuerySchema,
 

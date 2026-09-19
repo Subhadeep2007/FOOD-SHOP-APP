@@ -3,6 +3,7 @@ import express from "express";
 import {
 
     create,
+    updateMyBankDetails,
 
     getMine,
 
@@ -34,6 +35,7 @@ import {
     createRefundSchema,
 
     refundIdSchema,
+    updateRefundBankDetailsSchema,
 
     adminRefundQuerySchema,
 
@@ -100,6 +102,13 @@ router.get(
 
     getMineById
 
+);
+
+router.patch(
+    "/my/:id/bank-details",
+    authMiddleware,
+    validate(updateRefundBankDetailsSchema),
+    updateMyBankDetails
 );
 
 router.delete("/my/:id", authMiddleware, validate(refundIdSchema), deleteMine);

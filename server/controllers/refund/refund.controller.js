@@ -1,5 +1,6 @@
 import {
     createRefundRequest,
+    updateRefundBankDetails,
     getMyRefunds,
     getMyRefundById,
     getAllRefunds,
@@ -299,6 +300,19 @@ const completeCOD = async(
     }
 };
 
+const updateMyBankDetails = async(req, res, next) => {
+    try {
+        const refund = await updateRefundBankDetails({
+            userId: req.user.userId,
+            refundId: req.params.id,
+            bankDetails: req.body.bankDetails
+        });
+        return res.status(200).json({ success: true, message: "Refund bank details updated", data: refund });
+    } catch (error) {
+        next(error);
+    }
+};
+
 
 const deleteMine = async(req, res, next) => {
     try {
@@ -317,6 +331,7 @@ const deleteAdmin = async(req, res, next) => {
 
 export {
     create,
+    updateMyBankDetails,
     getMine,
     getMineById,
     getAll,

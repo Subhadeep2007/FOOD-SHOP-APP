@@ -2,7 +2,7 @@ function Footer() {
 
     return (
 
-        <footer className="mt-20 border-t border-slate-200 bg-slate-950 text-white">
+        <footer className="mt-20 border-t border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-orange-950 text-white">
 
             <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
 
@@ -12,7 +12,7 @@ function Footer() {
 
                         <div className="mb-4 flex items-center gap-2">
 
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 font-bold">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 font-bold shadow-lg shadow-orange-950/30">
                                 F
                             </div>
 

@@ -136,19 +136,14 @@ const calculateRefundAmount = (
         /*
             Refundable amount:
 
-            Order subtotal
-            -
-            Coupon discount
-
-            Delivery fee, tax and other
-            charges are not refundable.
+            Final order total (including delivery fees,
+            taxes, and discounts already applied).
         */
 
         const foodRefundableAmount =
             Math.max(
                 0,
-                Number(order.subtotal || 0) -
-                Number(order.discount || 0)
+                Number(order.totalAmount || 0)
             );
 
 
@@ -160,12 +155,7 @@ const calculateRefundAmount = (
             );
 
 
-        const nonRefundableAmount =
-            Math.max(
-                0,
-                Number(order.totalAmount || 0) -
-                foodRefundableAmount
-            );
+        const nonRefundableAmount = 0;
 
 
         return {
@@ -303,16 +293,13 @@ const createRefundRequest = async({
     // REFUND ELIGIBILITY
     // ========================================
 
-    if (![
-            "PLACED",
-            "CONFIRMED"
-        ].includes(
-            order.status
-        )) {
+    if (
+        order.status !== "CANCELLED"
+    ) {
 
         const error =
             new Error(
-                "Refund requests are not available once the order is being prepared"
+                "Refund requests are available only after the order is cancelled"
             );
 
         error.statusCode = 400;
@@ -345,6 +332,24 @@ const createRefundRequest = async({
             );
 
         error.statusCode = 404;
+
+        throw error;
+    }
+
+
+    // COD orders have no customer payment to return. Refunds are allowed
+    // only after an online payment has been successfully captured.
+    if (
+        payment.paymentMethod !== "ONLINE" ||
+        payment.status !== "CAPTURED"
+    ) {
+
+        const error =
+            new Error(
+                "Only successfully paid online orders are eligible for a refund"
+            );
+
+        error.statusCode = 400;
 
         throw error;
     }
@@ -416,9 +421,8 @@ const createRefundRequest = async({
     // REQUESTED AMOUNT
     // ========================================
 
+    // Refund requests always use the final payable order total.
     let requestedAmount =
-        amount !== undefined ?
-        Number(amount) :
         refundCalculation.refundableAmount;
 
 
@@ -446,19 +450,14 @@ const createRefundRequest = async({
 
 
     // ========================================
-    // COD BANK DETAILS
+    // BANK DETAILS (required for every refund type)
     // ========================================
 
     let savedBankDetails =
         null;
 
 
-    if (
-        payment.paymentMethod ===
-        "COD"
-    ) {
-
-        if (!bankDetails ||
+    if (!bankDetails ||
             !bankDetails.accountHolderName ||
             !bankDetails.accountNumber ||
             !bankDetails.ifscCode ||
@@ -468,7 +467,7 @@ const createRefundRequest = async({
 
             const error =
                 new Error(
-                    "Complete bank details are required for COD refund"
+                "Complete bank details are required for a refund"
                 );
 
             error.statusCode = 400;
@@ -477,7 +476,7 @@ const createRefundRequest = async({
         }
 
 
-        savedBankDetails = {
+    savedBankDetails = {
 
             accountHolderName: bankDetails.accountHolderName
                 .trim(),
@@ -494,8 +493,7 @@ const createRefundRequest = async({
 
             accountType: bankDetails.accountType
 
-        };
-    }
+    };
 
 
     // ========================================
@@ -579,6 +577,36 @@ const createRefundRequest = async({
 
 
     return refund;
+};
+
+
+const updateRefundBankDetails = async({
+    userId,
+    refundId,
+    bankDetails
+}) => {
+    const refund = await Refund.findOne({
+        _id: refundId,
+        user: userId,
+        status: { $in: ["REQUESTED", "UNDER_REVIEW"] }
+    });
+
+    if (!refund) {
+        const error = new Error("Bank details can be edited only while the refund is under review");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    refund.bankDetails = {
+        accountHolderName: bankDetails.accountHolderName.trim(),
+        accountNumber: bankDetails.accountNumber.trim(),
+        ifscCode: bankDetails.ifscCode.trim().toUpperCase(),
+        bankName: bankDetails.bankName.trim(),
+        accountType: bankDetails.accountType
+    };
+
+    await refund.save();
+    return formatRefundForCustomer(refund);
 };
 
 
@@ -771,7 +799,7 @@ const getAllRefunds = async({
 
     const refundsWithOrderBankDetails = refunds.map(refund => {
         const refundData = refund.toObject();
-        if (refundData.refundType === "COD" && refundData.order) {
+        if (refundData.order) {
             refundData.order.refundBankDetails = refundData.bankDetails;
         }
         if (refundData.order) {
@@ -965,10 +993,8 @@ const approveRefund = async({
     // APPROVED AMOUNT
     // ========================================
 
-    let amount =
-        approvedAmount !== undefined ?
-        Number(approvedAmount) :
-        refund.requestedAmount;
+    // Do not allow an admin-entered partial amount: return the requested final total.
+    let amount = refund.requestedAmount;
 
 
     const maximumAmount =
@@ -1418,6 +1444,7 @@ const softDeleteRefundByAdmin = async(refundId) => {
 export {
 
     createRefundRequest,
+    updateRefundBankDetails,
 
     getMyRefunds,
 
