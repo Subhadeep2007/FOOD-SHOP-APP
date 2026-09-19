@@ -10,6 +10,10 @@ from "../../models/payment.model.js";
 import Order
 from "../../models/order.model.js";
 
+import {
+    createNotification
+} from "../notification/notification.service.js";
+
 
 // ========================================
 // RAZORPAY BASE URL
@@ -575,6 +579,18 @@ const createRefundRequest = async({
 
         });
 
+    await createNotification({
+        userId,
+        type: "REFUND",
+        title: "Refund request submitted",
+        message: "Your refund request has been submitted for review.",
+        data: {
+            refundId: refund._id,
+            orderId: order._id,
+            amount: refund.requestedAmount
+        }
+    });
+
 
     return refund;
 };
@@ -901,6 +917,18 @@ const rejectRefund = async({
 
     await refund.save();
 
+    await createNotification({
+        userId: refund.user,
+        type: "REFUND",
+        title: "Refund request rejected",
+        message: "Your refund request has been rejected." +
+            (refund.adminNote ? ` Reason: ${refund.adminNote}` : ""),
+        data: {
+            refundId: refund._id,
+            orderId: refund.order
+        }
+    });
+
 
     return refund;
 };
@@ -1069,6 +1097,17 @@ const approveRefund = async({
 
 
         await refund.save();
+
+        await createNotification({
+            userId: refund.user,
+            type: "REFUND",
+            title: "Refund request approved",
+            message: "Your refund request has been approved and is awaiting bank transfer.",
+            data: {
+                refundId: refund._id,
+                orderId: refund.order._id
+            }
+        });
 
 
         return refund;
@@ -1245,6 +1284,18 @@ const approveRefund = async({
 
         await refund.order.save();
 
+        await createNotification({
+            userId: refund.user,
+            type: "REFUND",
+            title: "Refund completed",
+            message: "Your refund has been completed successfully.",
+            data: {
+                refundId: refund._id,
+                orderId: refund.order._id,
+                amount: refund.approvedAmount
+            }
+        });
+
 
         return refund;
 
@@ -1381,6 +1432,18 @@ const completeCODRefund = async({
 
 
     await refund.save();
+
+    await createNotification({
+        userId: refund.user,
+        type: "REFUND",
+        title: "Refund completed",
+        message: "Your COD refund has been completed by bank transfer.",
+        data: {
+            refundId: refund._id,
+            orderId: refund.order._id,
+            amount: refund.approvedAmount
+        }
+    });
 
 
     /*

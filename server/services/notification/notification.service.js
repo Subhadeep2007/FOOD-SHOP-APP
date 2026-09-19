@@ -49,7 +49,8 @@ const getMyNotifications = async(
 
     const [
         notifications,
-        total
+        total,
+        unreadCount
     ] =
     await Promise.all([
 
@@ -66,6 +67,11 @@ const getMyNotifications = async(
 
         Notification.countDocuments({
             user: userId
+        }),
+
+        Notification.countDocuments({
+            user: userId,
+            isRead: false
         })
 
     ]);
@@ -74,6 +80,8 @@ const getMyNotifications = async(
     return {
 
         notifications,
+
+        unreadCount,
 
         pagination: {
 

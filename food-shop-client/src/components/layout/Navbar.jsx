@@ -34,6 +34,10 @@ import {
     fetchCart
 } from "../../store/cartSlice";
 
+import {
+    getNotifications
+} from "../../api/notificationApi";
+
 function Navbar() {
 
     const dispatch =
@@ -48,6 +52,11 @@ function Navbar() {
         search,
         setSearch
     ] = useState("");
+
+    const [
+        unreadNotificationCount,
+        setUnreadNotificationCount
+    ] = useState(0);
 
     const navigate =
         useNavigate();
@@ -87,6 +96,32 @@ function Navbar() {
         }
 
     }, [dispatch, isAuthenticated, isAdmin]);
+
+    useEffect(() => {
+
+        const loadUnreadCount = async () => {
+
+            if (!isAuthenticated) {
+                setUnreadNotificationCount(0);
+                return;
+            }
+
+            try {
+                const data = await getNotifications({ page: 1, limit: 1 });
+                setUnreadNotificationCount(Number(data?.unreadCount) || 0);
+            } catch {
+                setUnreadNotificationCount(0);
+            }
+        };
+
+        loadUnreadCount();
+        window.addEventListener("notifications-changed", loadUnreadCount);
+
+        return () => {
+            window.removeEventListener("notifications-changed", loadUnreadCount);
+        };
+
+    }, [isAuthenticated]);
 
     const profileImage =
         user &&
@@ -259,12 +294,19 @@ function Navbar() {
 
                         <Link
                             to="/notifications"
-                            className="rounded-xl p-2 text-slate-600 hover:bg-slate-100"
+                            className="relative rounded-xl p-2 text-slate-600 hover:bg-slate-100"
                             title="Notifications"
                         >
                             <Bell
                                 size={20}
                             />
+
+                            {unreadNotificationCount > 0 && (
+
+                                <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-slate-900 px-1 text-center text-xs font-bold leading-5 text-white">
+                                    {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                                </span>
+                            )}
                         </Link>
                     )}
 
