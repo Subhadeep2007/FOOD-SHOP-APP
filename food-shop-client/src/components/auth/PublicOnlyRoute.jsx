@@ -11,11 +11,16 @@ function PublicOnlyRoute() {
 
     const {
         user,
-        isAuthenticated
+        isAuthenticated,
+        initialized
     } = useSelector(
         (state) =>
             state.auth
     );
+
+    if (!initialized) {
+        return null;
+    }
 
     if (
         isAuthenticated &&

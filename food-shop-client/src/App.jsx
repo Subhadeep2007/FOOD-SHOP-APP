@@ -117,6 +117,19 @@ import {
 } from "./store/authSlice";
 
 import {
+    setAccessToken as setAuthAccessToken,
+    setInitialized
+} from "./store/authSlice";
+
+import {
+    refreshAccessToken
+} from "./api/authApi";
+
+import {
+    setAccessToken as setApiAccessToken
+} from "./api/axios";
+
+import {
     resetCart
 } from "./store/cartSlice";
 
@@ -126,6 +139,29 @@ function App() {
         useDispatch();
 
     useEffect(() => {
+
+        const restoreSession = async () => {
+            try {
+                if (localStorage.getItem("user")) {
+                    const response = await refreshAccessToken();
+                    const data = response && response.data ? response.data : response;
+
+                    if (!data || !data.accessToken) {
+                        throw new Error("Session refresh failed");
+                    }
+
+                    setApiAccessToken(data.accessToken);
+                    dispatch(setAuthAccessToken(data.accessToken));
+                }
+            } catch {
+                dispatch(logout());
+                dispatch(resetCart());
+            } finally {
+                dispatch(setInitialized(true));
+            }
+        };
+
+        restoreSession();
 
         const clearExpiredSession =
             () => {
