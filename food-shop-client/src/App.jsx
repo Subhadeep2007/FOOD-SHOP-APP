@@ -142,7 +142,10 @@ function App() {
 
         const restoreSession = async () => {
             try {
-                if (localStorage.getItem("user")) {
+                if (
+                    localStorage.getItem("user") &&
+                    !localStorage.getItem("accessToken")
+                ) {
                     const response = await refreshAccessToken();
                     const data = response && response.data ? response.data : response;
 
