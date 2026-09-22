@@ -1295,3 +1295,5 @@ Add your preferred project license here.
 FoodShop is designed as a complete restaurant ordering platform where customers can discover food, manage favorites and cart items, save delivery addresses, checkout, pay, track orders in real time, receive notifications, review completed orders, and request refunds.
 
 The admin side provides the tools required to manage foods, stock, categories, orders, reviews, coupons, refunds, users, and analytics.
+Live link : https://food-shop-app-rosy.vercel.app
+
