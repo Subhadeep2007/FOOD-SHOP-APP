@@ -1297,3 +1297,5 @@ FoodShop is designed as a complete restaurant ordering platform where customers 
 The admin side provides the tools required to manage foods, stock, categories, orders, reviews, coupons, refunds, users, and analytics.
 Live link : https://food-shop-app-rosy.vercel.app
 
+author : subhadeep garai
+
