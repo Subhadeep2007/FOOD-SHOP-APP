@@ -637,7 +637,9 @@ const getMyRefunds = async(
     const refunds =
         await Refund.find({
 
-            user: userId
+            user: userId,
+
+            deletedByCustomerAt: null
 
         })
         .populate(
