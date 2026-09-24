@@ -4,6 +4,7 @@ import {
 
 import {
     Link,
+    useLocation,
     useNavigate
 } from "react-router";
 
@@ -37,6 +38,8 @@ function Login() {
 
     const navigate =
         useNavigate();
+
+    const location = useLocation();
 
     const [
         form,
@@ -100,7 +103,10 @@ function Login() {
                 );
 
                 navigate(
-                    "/account"
+                    location.state && location.state.from && location.state.from.pathname
+                        ? location.state.from.pathname
+                        : "/account",
+                    { replace: true }
                 );
 
             } catch (error) {

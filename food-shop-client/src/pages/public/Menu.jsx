@@ -11,8 +11,12 @@ import {
 import toast from "react-hot-toast";
 
 import {
+    useLocation,
+    useNavigate,
     useSearchParams
 } from "react-router";
+
+import { useSelector } from "react-redux";
 
 import FoodCard from "../../components/food/FoodCard";
 
@@ -45,6 +49,10 @@ const defaultFilters = {
 
 
 function Menu() {
+
+    const navigate = useNavigate();
+    const location = useLocation();
+    const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
     const [
         searchParams,
@@ -180,6 +188,11 @@ function Menu() {
 
     const loadFavorites =
         async () => {
+
+            if (!isAuthenticated) {
+                setFavoriteIds([]);
+                return;
+            }
 
             try {
 
@@ -430,9 +443,9 @@ function Menu() {
 
         loadCategories();
 
-        loadFavorites();
+        if (isAuthenticated) loadFavorites();
 
-    }, []);
+    }, [isAuthenticated]);
 
 
     // ========================================
@@ -493,6 +506,12 @@ function Menu() {
         async (
             foodId
         ) => {
+
+            if (!isAuthenticated) {
+                toast.error("Please login first to manage favorites.");
+                navigate("/login", { state: { from: location } });
+                return;
+            }
 
             try {
 

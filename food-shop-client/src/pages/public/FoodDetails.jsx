@@ -16,9 +16,13 @@ import toast from "react-hot-toast";
 
 import {
     Link,
+    useLocation,
+    useNavigate,
     useParams,
     useSearchParams
 } from "react-router";
+
+import { useSelector } from "react-redux";
 
 import {
     getFoodById
@@ -50,6 +54,10 @@ function FoodDetails() {
 
     const dispatch =
         useDispatch();
+
+    const navigate = useNavigate();
+    const location = useLocation();
+    const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
     const {
         foodId
@@ -127,6 +135,11 @@ function FoodDetails() {
 
     useEffect(() => {
 
+        if (!isAuthenticated) {
+            setIsFavorite(false);
+            return;
+        }
+
         const loadFavorite =
             async () => {
 
@@ -181,7 +194,7 @@ function FoodDetails() {
 
         loadFavorite();
 
-    }, [foodId]);
+    }, [foodId, isAuthenticated]);
 
     const finalPrice =
         useMemo(() => {
@@ -198,6 +211,12 @@ function FoodDetails() {
 
     const toggleFavorite =
         async () => {
+
+            if (!isAuthenticated) {
+                toast.error("Please login first to manage favorites.");
+                navigate("/login", { state: { from: location } });
+                return;
+            }
 
             try {
 
@@ -242,6 +261,12 @@ function FoodDetails() {
 
     const addFoodToCart =
         async () => {
+
+            if (!isAuthenticated) {
+                toast.error("Please login first to add food to your cart.");
+                navigate("/login", { state: { from: location } });
+                return;
+            }
 
             const result =
                 await dispatch(

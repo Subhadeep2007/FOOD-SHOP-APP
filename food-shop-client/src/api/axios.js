@@ -60,6 +60,12 @@ api.interceptors.response.use(
             return Promise.reject(error);
         }
 
+        // Guest requests can receive 401s from protected endpoints. There is
+        // no session to refresh in that case, so return the original response.
+        if (!accessToken) {
+            return Promise.reject(error);
+        }
+
         originalRequest._retry = true;
 
         try {
@@ -82,10 +88,12 @@ api.interceptors.response.use(
             const token = await refreshPromise;
             originalRequest.headers.Authorization = "Bearer " + token;
             return api(originalRequest);
-        } catch (refreshError) {
+        } catch {
             setAccessToken("");
             window.dispatchEvent(new Event("foodshop:auth-expired"));
-            return Promise.reject(refreshError);
+            // Keep the protected request's 401 as the user-facing error; the
+            // refresh endpoint's missing-cookie message is an implementation detail.
+            return Promise.reject(error);
         }
     }
 );
