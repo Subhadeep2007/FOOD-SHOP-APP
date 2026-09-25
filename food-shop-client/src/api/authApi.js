@@ -5,7 +5,7 @@ const registerUser = async(
 ) => {
 
     const response =
-        await api.post(
+        await api2.post(
             "/auth/register",
             data
         );
