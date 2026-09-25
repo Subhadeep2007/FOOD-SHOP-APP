@@ -1,4 +1,4 @@
-import { PDFDocument } from "pdfkit";
+import PDFDocument from "pdfkit";
 const generateReceipt = async(
     order,
     payment
@@ -89,7 +89,7 @@ const generateReceipt = async(
 
     document
         .text(
-            `Date: ${order.createdAt.toLocaleString()}`
+            `Date: ${new Date(order.createdAt).toLocaleString()}`
         );
 
     document
@@ -99,7 +99,7 @@ const generateReceipt = async(
 
     document
         .text(
-            `Payment Status: ${payment.status}`
+            `Payment Status: ${payment.paymentMethod === "COD" && payment.status === "PENDING" ? "PAY ON DELIVERY" : payment.status}`
         );
 
 
@@ -191,7 +191,7 @@ const generateReceipt = async(
         document
             .fontSize(11)
             .text(
-                `${item.name} x ${item.quantity}    ₹${item.subtotal.toFixed(2)}`
+                `${item.name} x ${item.quantity}    Rs. ${Number(item.subtotal || 0).toFixed(2)}`
             );
     }
 
@@ -207,22 +207,22 @@ const generateReceipt = async(
     document
         .fontSize(11)
         .text(
-            `Subtotal: ₹${order.subtotal.toFixed(2)}`
+            `Subtotal: Rs. ${Number(order.subtotal || 0).toFixed(2)}`
         );
 
     document
         .text(
-            `Discount: ₹${order.discount.toFixed(2)}`
+            `Discount: Rs. ${Number(order.discount || 0).toFixed(2)}`
         );
 
     document
         .text(
-            `Delivery Fee: ₹${order.deliveryFee.toFixed(2)}`
+            `Delivery Fee: Rs. ${Number(order.deliveryFee || 0).toFixed(2)}`
         );
 
     document
         .text(
-            `Tax: ₹${order.tax.toFixed(2)}`
+            `Tax: Rs. ${Number(order.tax || 0).toFixed(2)}`
         );
 
 
@@ -233,7 +233,7 @@ const generateReceipt = async(
     document
         .fontSize(16)
         .text(
-            `Total Paid: ₹${order.totalAmount.toFixed(2)}`, {
+            `${payment.paymentMethod === "COD" && payment.status === "PENDING" ? "Total Due" : "Total Paid"}: Rs. ${Number(order.totalAmount || 0).toFixed(2)}`, {
                 align: "right"
             }
         );
