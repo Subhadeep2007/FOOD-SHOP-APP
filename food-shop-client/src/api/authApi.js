@@ -1,4 +1,4 @@
-import api from "./axios";
+import { api, api2 } from "./axios";
 
 const registerUser = async(
     data
@@ -33,7 +33,7 @@ const verifyEmail = async(
 ) => {
 
     const response =
-        await api.post(
+        await api2.post(
             "/auth/verify-email",
             data
         );
@@ -47,7 +47,7 @@ const resendVerificationOTP = async(
 ) => {
 
     const response =
-        await api.post(
+        await api2.post(
             "/auth/resend-verification", {
                 email
             }
@@ -123,7 +123,7 @@ const forgotPassword = async(
 ) => {
 
     const response =
-        await api.post(
+        await api2.post(
             "/auth/forgot-password", {
                 email
             }
@@ -176,8 +176,7 @@ const updateProfileImage = async(
     const response =
         await api.patch(
             "/auth/profile-image",
-            formData,
-            {
+            formData, {
                 headers: {
                     "Content-Type": "multipart/form-data"
                 }

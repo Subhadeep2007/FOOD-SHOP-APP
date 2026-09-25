@@ -1,4 +1,4 @@
-import api from "./axios";
+import { api } from "./axios";
 
 const getFoods = async(params) => {
     const response = await api.get("/foods", {
@@ -20,9 +20,9 @@ const adminGetFoods = async(params) => {
     });
 
     return response.data &&
-        response.data.data
-            ? response.data.data
-            : response.data;
+        response.data.data ?
+        response.data.data :
+        response.data;
 };
 
 const adminGetFoodById = async(foodId) => {

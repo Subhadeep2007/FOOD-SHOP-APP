@@ -7,6 +7,13 @@ const api = axios.create({
         "Content-Type": "application/json"
     }
 });
+const api2 = axios.create({
+    baseURL: import.meta.env.VITE_API_URL2,
+    withCredentials: true,
+    headers: {
+        "Content-Type": "application/json"
+    }
+});
 
 let accessToken = localStorage.getItem("accessToken") || "";
 let refreshPromise = null;
@@ -51,7 +58,7 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
     (response) => response,
-    async (error) => {
+    async(error) => {
         const originalRequest = error.config;
         const status = error.response && error.response.status;
         const isRefreshRequest = originalRequest && originalRequest.url === "/auth/refresh-token";
@@ -98,4 +105,4 @@ api.interceptors.response.use(
     }
 );
 
-export default api;
+export { api, api2 };
