@@ -19,7 +19,7 @@ const registerAdmin = async(
 ) => {
 
     const response =
-        await api.post(
+        await api2.post(
             "/auth/admin/register",
             data
         );
