@@ -73,7 +73,17 @@ function AdminOrders() {
             }
         }
         setWorkingId(order._id);
-        try { await updateAdminOrderStatus(order._id, { status: nextStatus, deliveryDetails }); toast.success("Order status updated."); setDeliveryForm(null); await load(); }
+        try {
+            const updatedOrder = await updateAdminOrderStatus(order._id, { status: nextStatus, deliveryDetails });
+            setOrders((current) => current.flatMap((item) => {
+                if (String(item._id) !== String(order._id)) return [item];
+                if (status && status !== updatedOrder.status) return [];
+                return [{ ...item, status: updatedOrder.status, paymentStatus: updatedOrder.paymentStatus, deliveryDetails: updatedOrder.deliveryDetails }];
+            }));
+            setSelectedOrder((current) => current && String(current._id) === String(order._id) ? { ...current, status: updatedOrder.status, paymentStatus: updatedOrder.paymentStatus, deliveryDetails: updatedOrder.deliveryDetails } : current);
+            toast.success("Order status updated.");
+            setDeliveryForm(null);
+        }
         catch (error) { toast.error(message(error)); }
         finally { setWorkingId(""); }
     };
@@ -82,7 +92,16 @@ function AdminOrders() {
         const reason = window.prompt("Cancellation reason (optional):");
         if (reason === null) return;
         setWorkingId(order._id);
-        try { await cancelAdminOrder(order._id, reason); toast.success("Order cancelled."); await load(); }
+        try {
+            const updatedOrder = await cancelAdminOrder(order._id, reason);
+            setOrders((current) => current.flatMap((item) => {
+                if (String(item._id) !== String(order._id)) return [item];
+                if (status && status !== updatedOrder.status) return [];
+                return [{ ...item, status: updatedOrder.status, cancellationReason: updatedOrder.cancellationReason, cancelledAt: updatedOrder.cancelledAt }];
+            }));
+            setSelectedOrder((current) => current && String(current._id) === String(order._id) ? { ...current, status: updatedOrder.status, cancellationReason: updatedOrder.cancellationReason, cancelledAt: updatedOrder.cancelledAt } : current);
+            toast.success("Order cancelled.");
+        }
         catch (error) { toast.error(message(error)); }
         finally { setWorkingId(""); }
     };
@@ -90,7 +109,12 @@ function AdminOrders() {
     const remove = async (order) => {
         if (!window.confirm("Soft delete this completed/cancelled order?")) return;
         setWorkingId(order._id);
-        try { await deleteAdminOrder(order._id); toast.success("Order deleted."); setSelectedOrder(null); await load(); }
+        try {
+            await deleteAdminOrder(order._id);
+            setOrders((current) => current.filter((item) => String(item._id) !== String(order._id)));
+            setSelectedOrder((current) => current && String(current._id) === String(order._id) ? null : current);
+            toast.success("Order deleted.");
+        }
         catch (error) { toast.error(message(error)); }
         finally { setWorkingId(""); }
     };
