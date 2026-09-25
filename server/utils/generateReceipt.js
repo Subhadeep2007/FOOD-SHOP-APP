@@ -1,5 +1,4 @@
-import PDFDocument from "pdfkit";
-
+import { PDFDocument } from "pdfkit";
 const generateReceipt = async(
     order,
     payment
