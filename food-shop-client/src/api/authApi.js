@@ -138,11 +138,16 @@ const resetPassword = async(
 ) => {
 
     const response =
-        await api.post(
+        await api2.post(
             "/auth/reset-password",
             data
         );
 
+    return response.data;
+};
+
+const verifyPasswordResetOTP = async(data) => {
+    const response = await api2.post("/auth/verify-reset-otp", data);
     return response.data;
 };
 
@@ -209,6 +214,7 @@ export {
     logoutAllSessions,
     forgotPassword,
     resetPassword,
+    verifyPasswordResetOTP,
     changePassword,
     updateProfileImage,
     updateShopLocation,

@@ -1056,6 +1056,16 @@ const forgotPassword = async(
 // RESET PASSWORD
 // ========================================
 
+const verifyPasswordResetOTP = async({ email, otp }) => {
+    const normalizedEmail = normalizeEmail(email);
+    const user = await User.findOne({ email: normalizedEmail })
+        .select("+resetPasswordOTP +resetPasswordOTPExpire");
+    if (!user || !user.resetPasswordOTP) throw createError("No password reset OTP found", 400);
+    if (!user.resetPasswordOTPExpire || user.resetPasswordOTPExpire < new Date()) throw createError("OTP has expired. Please request a new one.", 400);
+    if (user.resetPasswordOTP !== otp) throw createError("Invalid OTP", 400);
+    return true;
+};
+
 const resetPassword = async({
     email,
     otp,
@@ -1069,7 +1079,7 @@ const resetPassword = async({
     const user =
         await User.findOne({
             email: normalizedEmail
-        });
+        }).select("+resetPasswordOTP +resetPasswordOTPExpire");
 
 
     if (!user) {
@@ -1335,6 +1345,7 @@ export {
     logoutUser,
     logoutAllSessions,
     forgotPassword,
+    verifyPasswordResetOTP,
     resetPassword,
     changePassword,
     updateProfileImage,

@@ -9,6 +9,7 @@ import {
     logoutUser,
     logoutAllSessions,
     forgotPassword,
+    verifyPasswordResetOTP,
     resetPassword,
     changePassword,
     updateProfileImage,
@@ -429,6 +430,15 @@ const forgotPasswordController = async(
 // RESET PASSWORD
 // ========================================
 
+const verifyPasswordResetOTPController = async(req, res, next) => {
+    try {
+        await verifyPasswordResetOTP(req.body);
+        return res.status(200).json({ success: true, message: "OTP verified successfully." });
+    } catch (error) {
+        next(error);
+    }
+};
+
 const resetPasswordController = async(
     req,
     res,
@@ -570,6 +580,7 @@ export {
     logoutAll,
 
     forgotPasswordController,
+    verifyPasswordResetOTPController,
 
     resetPasswordController,
 

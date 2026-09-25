@@ -11,6 +11,7 @@ import {
     logout,
     logoutAll,
     forgotPasswordController,
+    verifyPasswordResetOTPController,
     resetPasswordController,
     changePasswordController,
     updateProfileImageController,
@@ -26,6 +27,7 @@ import {
     loginSchema,
     adminLoginSchema,
     forgotPasswordSchema,
+    verifyPasswordResetOTPSchema,
     resetPasswordSchema,
     changePasswordSchema,
     shopLocationSchema
@@ -174,6 +176,13 @@ router.post(
 // ========================================
 // RESET PASSWORD
 // ========================================
+
+router.post(
+    "/verify-reset-otp",
+    authRateLimiter,
+    validate(verifyPasswordResetOTPSchema),
+    verifyPasswordResetOTPController
+);
 
 router.post(
     "/reset-password",

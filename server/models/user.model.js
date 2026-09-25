@@ -28,6 +28,18 @@ const userSchema = new mongoose.Schema({
         minlength: 8
     },
 
+    resetPasswordOTP: {
+        type: String,
+        default: null,
+        select: false
+    },
+
+    resetPasswordOTPExpire: {
+        type: Date,
+        default: null,
+        select: false
+    },
+
     // ========================================
     // PROFILE
     // ========================================

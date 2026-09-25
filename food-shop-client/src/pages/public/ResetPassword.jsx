@@ -10,7 +10,8 @@ import {
 import toast from "react-hot-toast";
 
 import {
-    resetPassword
+    resetPassword,
+    verifyPasswordResetOTP
 } from "../../api/authApi";
 
 function ResetPassword() {
@@ -31,6 +32,8 @@ function ResetPassword() {
         loading,
         setLoading
     ] = useState(false);
+
+    const [otpVerified, setOtpVerified] = useState(false);
 
     useEffect(() => {
 
@@ -98,6 +101,20 @@ function ResetPassword() {
             }
         };
 
+    const verifyOtp = async(event) => {
+        event.preventDefault();
+        setLoading(true);
+        try {
+            await verifyPasswordResetOTP({ email: form.email, otp: form.otp });
+            setOtpVerified(true);
+            toast.success("OTP verified. Set your new password.");
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Unable to verify OTP.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <main className="min-h-screen bg-slate-100 px-4 py-12">
 
@@ -108,13 +125,11 @@ function ResetPassword() {
                 </h1>
 
                 <form
-                    onSubmit={
-                        submit
-                    }
+                    onSubmit={otpVerified ? submit : verifyOtp}
                     className="mt-7 space-y-4"
                 >
 
-                    <input
+                    {!otpVerified && <input
                         required
                         type="email"
                         placeholder="Email"
@@ -131,9 +146,9 @@ function ResetPassword() {
                             })
                         }
                         className="w-full rounded-xl border px-4 py-3"
-                    />
+                    />}
 
-                    <input
+                    {!otpVerified && <input
                         required
                         maxLength="6"
                         placeholder="OTP"
@@ -150,9 +165,9 @@ function ResetPassword() {
                             })
                         }
                         className="w-full rounded-xl border px-4 py-3 text-center font-bold tracking-[0.35em]"
-                    />
+                    />}
 
-                    <input
+                    {otpVerified && <input
                         required
                         minLength="8"
                         type="password"
@@ -170,7 +185,7 @@ function ResetPassword() {
                             })
                         }
                         className="w-full rounded-xl border px-4 py-3"
-                    />
+                    />}
 
                     <button
                         disabled={
@@ -180,7 +195,7 @@ function ResetPassword() {
                     >
                         {loading
                             ? "Resetting..."
-                            : "Reset Password"}
+                            : otpVerified ? "Reset Password" : "Verify OTP"}
                     </button>
 
                 </form>
