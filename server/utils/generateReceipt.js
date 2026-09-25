@@ -1,8 +1,13 @@
-import PDFDocument from "pdfkit";
 const generateReceipt = async(
     order,
     payment
 ) => {
+
+    const pdfkit =
+        await import("pdfkit");
+
+    const PDFDocument =
+        pdfkit.default;
 
     const document =
         new PDFDocument({
