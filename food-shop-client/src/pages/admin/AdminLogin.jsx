@@ -296,6 +296,13 @@ function AdminLogin() {
                     </form>
 
                     <Link
+                        to="/forgot-password?role=admin"
+                        className="mt-4 block text-center text-sm font-bold text-slate-400 transition hover:text-white"
+                    >
+                        Forgot password?
+                    </Link>
+
+                    <Link
                         to="/admin/register"
                         className="mt-5 block text-center text-sm font-bold text-slate-400 transition hover:text-white"
                     >

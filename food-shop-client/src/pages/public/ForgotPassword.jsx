@@ -3,6 +3,7 @@ import {
 } from "react";
 
 import {
+    useLocation,
     useNavigate
 } from "react-router";
 
@@ -16,6 +17,8 @@ function ForgotPassword() {
 
     const navigate =
         useNavigate();
+    const location = useLocation();
+    const loginPath = new URLSearchParams(location.search).get("role") === "admin" ? "/admin/login" : "/login";
 
     const [
         email,
@@ -48,6 +51,7 @@ function ForgotPassword() {
                     "resetEmail",
                     email
                 );
+                sessionStorage.setItem("resetLoginPath", loginPath);
 
                 toast.success(
                     "Password reset OTP sent."

@@ -9,7 +9,8 @@ import {
 import toast from "react-hot-toast";
 
 import {
-    useDispatch
+    useDispatch,
+    useSelector
 } from "react-redux";
 
 import {
@@ -24,6 +25,9 @@ function ChangePassword() {
 
     const dispatch =
         useDispatch();
+
+    const user = useSelector((state) => state.auth.user);
+    const loginPath = user?.role === "admin" ? "/admin/login" : "/login";
 
     const navigate =
         useNavigate();
@@ -67,7 +71,7 @@ function ChangePassword() {
                 );
 
                 navigate(
-                    "/login"
+                    loginPath
                 );
 
             } catch (error) {

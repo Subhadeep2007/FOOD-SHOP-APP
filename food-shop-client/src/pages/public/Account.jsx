@@ -413,7 +413,7 @@ function Account() {
                         )}
 
                         <Link
-                            to="/change-password"
+                            to={isAdmin ? "/admin/change-password" : "/change-password"}
                             className="rounded-xl border border-slate-300 px-4 py-3 text-center font-bold"
                         >
                             Change Password

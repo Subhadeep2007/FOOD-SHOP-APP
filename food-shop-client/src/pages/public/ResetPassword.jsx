@@ -74,13 +74,15 @@ function ResetPassword() {
                 sessionStorage.removeItem(
                     "resetEmail"
                 );
+                const loginPath = sessionStorage.getItem("resetLoginPath") || "/login";
+                sessionStorage.removeItem("resetLoginPath");
 
                 toast.success(
                     "Password reset successfully."
                 );
 
                 navigate(
-                    "/login"
+                    loginPath
                 );
 
             } catch (error) {

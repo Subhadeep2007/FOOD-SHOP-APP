@@ -444,6 +444,13 @@ function App() {
                         }
                     />
 
+                    <Route
+                        path="/admin/change-password"
+                        element={
+                            <ChangePassword />
+                        }
+                    />
+
                 </Route>
 
             </Routes>
